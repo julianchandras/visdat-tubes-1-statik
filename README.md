@@ -1,2 +1,12 @@
+## Setup
+```bash
+python -m venv .venv
+
+# For windows
+.venv\Scripts\Activate.ps1
+
+pip install -r requirements.txt
+```
+
 ## Citation
 WORLD Policy Analysis Center (WORLD). WORLD Child Marriage Laws, 2023 [dataset]. Version 1. Los Angeles: WORLD Policy Analysis Center [producer], 2025. Cape Town: DataFirst [distributor], 2025. DOI: https://doi.org/10.25828/v8s6-jz31
