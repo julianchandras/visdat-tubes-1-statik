@@ -33,8 +33,9 @@ dashboard/
   prepare_data.py     # build-step: .xls → dashboard_data.csv
   charts/             # modul chart Plotly (peta, gender×income, loophole, dst)
   data/               # dashboard_data.csv (generated)
-  .streamlit/config.toml
   requirements.txt
+.streamlit/config.toml  # tema — di ROOT repo (dibaca relatif ke working dir
+                        # 'streamlit run', bukan lokasi app.py)
 ```
 
 ## Fitur interaktif (syarat tugas)

@@ -1,4 +1,7 @@
 # Tema Streamlit — selaras palet poster Tubes 1 (deep teal + terracotta).
+# WAJIB di root repo: Streamlit membaca config relatif ke working directory
+# (root repo saat 'streamlit run dashboard/app.py', juga di Streamlit Cloud),
+# BUKAN relatif ke lokasi app.py. Lihat docs config.toml file locations.
 [theme]
 primaryColor = "#E07A5F"
 backgroundColor = "#F8F9FA"
