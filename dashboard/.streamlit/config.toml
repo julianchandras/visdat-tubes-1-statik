@@ -1,0 +1,13 @@
+# Tema Streamlit — selaras palet poster Tubes 1 (deep teal + terracotta).
+[theme]
+primaryColor = "#E07A5F"
+backgroundColor = "#F8F9FA"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#2D3142"
+font = "sans serif"
+
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false

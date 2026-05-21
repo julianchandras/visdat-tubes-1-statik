@@ -14,6 +14,7 @@ import matplotlib.patches as mpatches
 import numpy as np
 import pandas as pd
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
+from matplotlib.path import Path as MplPath
 from pathlib import Path
 
 import geopandas as gpd
@@ -22,18 +23,49 @@ from poster import theme as T
 
 
 # ────────────────────────────────────────────────────────────
+# Pin marker — custom teardrop path (mirip Google Maps pin)
+# Tip pada koordinat (0, -1.4), kepala bulat di atas. Marker matplotlib
+# di-center di geometric mean — visual tip akan sedikit di bawah
+# scatter coord, masih jelas menunjuk ke negara.
+# ────────────────────────────────────────────────────────────
+PIN_PATH = MplPath(
+    vertices=[
+        (0.0, -1.4),    # tip (bottom)
+        (-0.55, -0.5),  # left lower curve
+        (-0.95, 0.30),  # left side
+        (-0.95, 1.05),  # left upper
+        (-0.55, 1.45),  # top-left
+        (0.0, 1.55),    # top center
+        (0.55, 1.45),   # top-right
+        (0.95, 1.05),   # right upper
+        (0.95, 0.30),   # right side
+        (0.55, -0.5),   # right lower curve
+        (0.0, -1.4),    # close to tip
+    ],
+    codes=[
+        MplPath.MOVETO,
+        MplPath.LINETO, MplPath.LINETO, MplPath.LINETO, MplPath.LINETO,
+        MplPath.LINETO,
+        MplPath.LINETO, MplPath.LINETO, MplPath.LINETO, MplPath.LINETO,
+        MplPath.CLOSEPOLY,
+    ],
+)
+
+
+# ────────────────────────────────────────────────────────────
 # Konstanta
 # ────────────────────────────────────────────────────────────
 
 SHAPEFILE_PATH = Path("poster/geo/ne_50m_admin_0_countries.shp")
 
-# Label untuk setiap kode loop_summ di legend
+# Label untuk setiap kode loop_summ di legend.
+# Order = progresi "kebaikan" dari TERBAIK (atas) → TERBURUK (bawah) → ambigu/no-data.
 LOOP_SUMM_LABELS = {
-    5.0: "Parity + usia ≥ 18",
-    3.0: "1 masalah: inequality atau usia 14-17",
-    2.0: "2 masalah: inequality DAN usia 14-17",
-    1.0: "Bisa nikah ≤ 13 tahun",
-    9.0: "Unknown (hukum adat/agama)",
+    5.0: "Kesetaraan dan usia ≥ 18 tahun",
+    3.0: "1 masalah: kesenjangan ATAU usia 14-17",
+    2.0: "2 masalah: kesenjangan DAN usia 14-17",
+    1.0: "Bisa menikah ≤ 13 tahun",
+    9.0: "Mungkin < 18 tahun (diatur adat/agama)",
 }
 LEGEND_ORDER = [5.0, 3.0, 2.0, 1.0, 9.0]
 
@@ -42,23 +74,25 @@ LEGEND_ORDER = [5.0, 3.0, 2.0, 1.0, 9.0]
 EQUAL_EARTH_CRS = "EPSG:8857"
 
 
-# Negara untuk callout — dipilih yang dramatic (loop_summ=1 + high-income)
+# Negara untuk callout — dipilih yang dramatic (loop_summ=1 + high-income).
+# `xy_offset` (dx, dy dalam koordinat data Equal Earth, bukan points) →
+# text di area laut/empty space agar tidak menutupi negara lain.
+# Diukur empiris dari shapefile (satuan: meter di proyeksi Equal Earth).
 HIGHLIGHT_COUNTRIES = {
     "GRC": {
         "label": "Yunani",
-        "note":  "Satu-satunya negara\nEropa dengan kode 1",
-        "xy_offset": (40, 80),
+        "note":  "Satu-satunya negara Eropa\ndengan kode 1 (≤ 13 tahun)",
+        # Pindah jauh ke kiri & turun (N. Atlantic antara Eropa & Amerika)
+        # supaya tidak menutupi judul di atas
+        "xy_offset": (-250, -80),
     },
     "SAU": {
         "label": "Arab Saudi",
-        "note":  "Negara high-income\nmengizinkan ≤ 13",
-        "xy_offset": (70, -60),
+        "note":  "Negara high-income\nmengizinkan ≤ 13 tahun",
+        # Turun jauh ke Indian Ocean supaya tidak menutupi India/Indonesia
+        "xy_offset": (50, -180),
     },
-    "SGP": {
-        "label": "Singapura",
-        "note":  "High-income dengan\ngender gap ekstrem",
-        "xy_offset": (85, -20),
-    },
+    # Singapore dihapus per keputusan tim
 }
 
 
@@ -108,58 +142,56 @@ def render_panel_a(
     # Reproject ke Equal Earth
     world = world.to_crs(EQUAL_EARTH_CRS)
 
-    # Figure setup
+    # Figure setup — 4 rows: title (hidden) | map | LEGEND DEDICATED | footer
+    # Legend di-dedicate ke row sendiri supaya tidak overlap dengan land area
+    # peta (Australia, S. Africa, S. America yang meluas ke bawah).
     if fig is None:
         fig = plt.figure(figsize=(14.5, 8.5), dpi=150)
         outer = GridSpec(
-            nrows=3, ncols=1,
+            nrows=4, ncols=1,
             figure=fig,
-            height_ratios=[1.0, 7.0, 0.8],
-            hspace=0.02,
+            height_ratios=[0.6, 7.0, 1.0, 0.15],
+            hspace=0.04,
             left=0.02, right=0.98, top=0.98, bottom=0.03,
         )
         title_ax = fig.add_subplot(outer[0])
         map_ax = fig.add_subplot(outer[1])
-        footer_ax = fig.add_subplot(outer[2])
+        legend_ax = fig.add_subplot(outer[2])
+        footer_ax = fig.add_subplot(outer[3])
     else:
         assert host_subplot_spec is not None
         inner = GridSpecFromSubplotSpec(
-            nrows=3, ncols=1,
+            nrows=4, ncols=1,
             subplot_spec=host_subplot_spec,
-            height_ratios=[1.0, 7.0, 0.8],
-            hspace=0.02,
+            height_ratios=[0.6, 7.0, 1.0, 0.15],
+            hspace=0.04,
         )
         title_ax = fig.add_subplot(inner[0])
         map_ax = fig.add_subplot(inner[1])
-        footer_ax = fig.add_subplot(inner[2])
+        legend_ax = fig.add_subplot(inner[2])
+        footer_ax = fig.add_subplot(inner[3])
 
     # ── Title block ──
     title_ax.axis("off")
     title_ax.text(
-        0.5, 0.65, "PETA KETIDAKADILAN HUKUM",
+        0.5, 0.50, "Peta Kondisi Global Pernikahan Anak",
         transform=title_ax.transAxes,
-        family="serif", fontsize=34, weight=900,
-        color=T.COLOR_HEADLINE,
-        ha="center", va="center",
-    )
-    title_ax.text(
-        0.5, 0.15,
-        "Apakah hukum negara melindungi anak perempuan dari pernikahan dini? "
-        "Kode gabungan usia minimum dan kesetaraan gender — 193 negara anggota PBB.",
-        transform=title_ax.transAxes,
-        family="sans-serif", fontsize=13, color=T.COLOR_MUTED,
+        family="serif", fontsize=18, weight=900, color=T.COLOR_HEADLINE,
         ha="center", va="center",
     )
 
-    # ── Base layer: no-data / non-UN countries ──
+    # ── Base layer: no-data / non-UN countries (light grey + hatched) ──
     no_data = world[world["loop_summ"].isna()]
     no_data.plot(
         ax=map_ax,
         color=T.NO_DATA_COLOR,
         edgecolor="white", linewidth=0.6,
+        hatch=T.NO_DATA_HATCH,
     )
 
     # ── Kategori non-Unknown (ordinal 1/2/3/5) ──
+    # Parity (code 5) pakai opacity < 100% supaya feel "lega/hijau" tidak
+    # terlalu dominan secara visual — sesuai revisi tim.
     for code in [5.0, 3.0, 2.0, 1.0]:
         sub = world[world["loop_summ"] == code]
         if sub.empty:
@@ -168,9 +200,10 @@ def render_panel_a(
             ax=map_ax,
             color=T.LOOP_SUMM_COLORS[code],
             edgecolor="white", linewidth=0.6,
+            alpha=T.PARITY_ALPHA if code == 5.0 else 1.0,
         )
 
-    # ── Kategori Unknown (kode 9) dengan hatched pattern ──
+    # ── Kategori Unknown (kode 9): kuning + dot pattern subtle ──
     unknown = world[world["loop_summ"] == 9.0]
     if not unknown.empty:
         unknown.plot(
@@ -179,6 +212,9 @@ def render_panel_a(
             edgecolor="white", linewidth=0.6,
             hatch=T.UNKNOWN_HATCH,
         )
+
+    # Highlight border dihapus per keputusan tim — pinpoint marker +
+    # text annotation sudah cukup mengarahkan fokus ke negara highlight
 
     # ── Map axes styling ──
     map_ax.set_aspect("equal")
@@ -192,12 +228,11 @@ def render_panel_a(
     height = maxy - miny
     map_ax.set_ylim(miny + height * 0.02, maxy - height * 0.05)
 
-    # ── Annotation callouts ──
+    # ── Annotation callouts: ring scatter + curved arrow + text ──
     for iso3, meta in HIGHLIGHT_COUNTRIES.items():
         rows = world[world["ADM0_A3"] == iso3]
         if rows.empty:
             continue
-        # Gunakan representative_point (label-safe) atau centroid
         country_geom = rows.geometry.iloc[0]
         if country_geom is None or country_geom.is_empty:
             continue
@@ -206,18 +241,18 @@ def render_panel_a(
         except Exception:
             cx, cy = country_geom.centroid.coords[0]
 
-        # Lingkaran highlight
+        # Ring scatter (no fill, accent edge) di country
         map_ax.scatter(
             cx, cy, s=180, facecolors="none",
             edgecolors=T.COLOR_ACCENT, linewidths=1.8, zorder=5,
         )
 
-        # Annotation
+        # Annotate dengan curved arrow + bbox bg
         map_ax.annotate(
             f"{meta['label']}\n{meta['note']}",
             xy=(cx, cy),
             xytext=meta["xy_offset"], textcoords="offset points",
-            fontsize=10, color=T.COLOR_HEADLINE, weight=600,
+            fontsize=8, color=T.COLOR_HEADLINE, weight=600,
             ha="center", family="sans-serif",
             arrowprops=dict(
                 arrowstyle="-",
@@ -234,6 +269,8 @@ def render_panel_a(
         )
 
     # ── Legend ──
+    # Ordering: progresi "kebaikan" (terbaik → terburuk) dengan
+    # Unknown & No-data sebagai 2 kategori tambahan di akhir.
     legend_patches = []
     for code in LEGEND_ORDER:
         color = T.LOOP_SUMM_COLORS[code]
@@ -244,53 +281,37 @@ def render_panel_a(
             hatch=hatch, label=label,
         )
         legend_patches.append(patch)
-    # Tambah no-data patch
+    # No-data: hatched (sebelumnya tekstur Unknown, sekarang dipindah ke sini)
     legend_patches.append(
         mpatches.Patch(
             facecolor=T.NO_DATA_COLOR, edgecolor="white",
-            linewidth=0.5, label="Tidak ada data",
+            linewidth=0.5, hatch=T.NO_DATA_HATCH,
+            label="Tidak ada data",
         )
     )
 
-    legend = map_ax.legend(
+    # Legend di axes dedicated — single row (ncol=6) supaya match arah
+    # "← baik    buruk →" left-to-right, tidak misleading lagi
+    legend_ax.axis("off")
+    legend = legend_ax.legend(
         handles=legend_patches,
-        loc="lower center",
-        bbox_to_anchor=(0.5, -0.01),
-        ncol=3,
+        loc="center",
+        bbox_to_anchor=(0.5, 0.5),
+        ncol=6,
         frameon=False,
-        fontsize=10,
-        handlelength=1.8, handleheight=1.1,
-        columnspacing=1.5,
+        fontsize=8.5,
+        handlelength=1.5, handleheight=1.0,
+        columnspacing=0.9,
         labelcolor=T.COLOR_BODY,
     )
     legend.set_title(
-        "Kualitas perlindungan hukum terhadap pernikahan dini:",
+        "Tingkat perlindungan anak dari pernikahan dini",
         prop={"family": "sans-serif", "size": 10, "weight": 700},
     )
     legend.get_title().set_color(T.COLOR_HEADLINE)
 
-    # ── Footer caption ──
+    # Footer dihapus per revisi tim — sumber sudah ada di footer poster utama
     footer_ax.axis("off")
-    counts = df["loop_summ"].value_counts().to_dict()
-    n_parity = int(counts.get(5.0, 0))
-    n_worst = int(counts.get(1.0, 0))
-    footer_ax.text(
-        0.5, 0.75,
-        f"Dari 193 negara UN: {n_parity} sudah mencapai parity + usia ≥ 18, "
-        f"namun {n_worst} masih mengizinkan pernikahan anak perempuan ≤ 13 tahun.",
-        transform=footer_ax.transAxes,
-        family="sans-serif", fontsize=10, color=T.COLOR_ACCENT,
-        weight=600, ha="center", va="top",
-    )
-    footer_ax.text(
-        0.5, 0.25,
-        "Proyeksi: Equal Earth (equal-area). "
-        "Sumber: WORLD Policy Analysis Center, Child Marriage Laws 2023. "
-        "Batas negara: Natural Earth 50m.",
-        transform=footer_ax.transAxes,
-        family="sans-serif", fontsize=8, color=T.COLOR_MUTED,
-        ha="center", va="top",
-    )
 
     return fig
 

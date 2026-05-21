@@ -28,25 +28,27 @@ STACK_COLORS = {
 INCOME_ORDER = ["Low-income", "Middle-income", "High-income"]
 
 
-# Kategori loophole — label display + kolom + kriteria kode
+# Kategori loophole — label + sublabel deskriptif (jawab "ini apa?")
+# Sublabel diperpendek dengan format paralel "via X" supaya muat di
+# half-width Panel C, tidak menjorok ke Panel B.
 LOOPHOLE_CATEGORIES = [
     {
-        "label":   "Parental Consent",
+        "label":   "Izin Orang Tua",
         "column":  "except_pc",
         "codes":   [2, 3],
-        "sublabel": "Izin ortu jadi celah — paling lunak di muka hukum",
+        "sublabel": "Pengecualian via izin orang tua / wali",
     },
     {
-        "label":   "Hukum Adat / Agama",
+        "label":   "Hukum Adat/Agama",
         "column":  "except_crlaw",
         "codes":   [2],
-        "sublabel": "Paralel sistem hukum civil yang tidak tegas",
+        "sublabel": "Pengecualian via hukum adat / agama",
     },
     {
         "label":   "Kehamilan",
         "column":  "except_preg",
         "codes":   [2],
-        "sublabel": "Dibolehkan kalau sudah hamil / melahirkan",
+        "sublabel": "Pengecualian via kehamilan / kelahiran",
     },
 ]
 
@@ -89,12 +91,14 @@ def render_panel_c(
     max_total = counts["total"].max()
 
     # ── Figure/axes setup ──
+    # Footer ratio diperbesar (0.55 → 1.0) supaya muat 2 baris Catatan
+    # + 1 baris Sumber tanpa tabrakan.
     if fig is None:
         fig = plt.figure(figsize=(8.2, 5.8), dpi=150)
         outer = GridSpec(
             nrows=3, ncols=1,
             figure=fig,
-            height_ratios=[1.0, 3.5, 0.55],
+            height_ratios=[1.0, 3.0, 1.0],
             hspace=0.30,
             left=0.04, right=0.98, top=0.95, bottom=0.06,
         )
@@ -106,7 +110,7 @@ def render_panel_c(
         inner = GridSpecFromSubplotSpec(
             nrows=3, ncols=1,
             subplot_spec=host_subplot_spec,
-            height_ratios=[1.0, 3.5, 0.55],
+            height_ratios=[1.0, 3.0, 1.0],
             hspace=0.30,
         )
         title_ax = fig.add_subplot(inner[0])
@@ -116,79 +120,48 @@ def render_panel_c(
     # ── Title block ──
     title_ax.axis("off")
     title_ax.text(
-        0.0, 0.75, "DARI MANA CELAHNYA BOCOR?",
+        0.0, 0.85,
+        "Apa Saja Celah Hukum Pernikahan Anak?",
         transform=title_ax.transAxes,
-        family="serif", fontsize=20, weight=900, color=T.COLOR_HEADLINE,
+        family="serif", fontsize=14, weight=900, color=T.COLOR_HEADLINE,
+        va="top",
     )
     title_ax.text(
-        0.0, 0.18,
-        "Jumlah negara yang memiliki pengecualian atas batas usia 18, per mekanisme hukum",
+        0.0, 0.42,
+        "Banyak negara mengizinkan pernikahan anak atas alasan izin\n"
+        "orang tua, hukum adat/agama, maupun kehamilan.",
         transform=title_ax.transAxes,
-        family="sans-serif", fontsize=11, color=T.COLOR_MUTED,
+        family="sans-serif", fontsize=10, color=T.COLOR_MUTED,
+        va="top", linespacing=1.4,
     )
 
-    # ── Stacked horizontal bars ──
+    # ── Simple horizontal bar — single color, no income breakdown ──
     y_positions = np.arange(len(counts))[::-1]   # terbesar di atas
     bar_height = 0.55
+    BAR_COLOR = T.COLOR_HEADLINE   # deep teal selaras font color headline
 
     for yi, (_, row) in zip(y_positions, counts.iterrows()):
-        left = 0.0
-        for inc in INCOME_ORDER:
-            v = row[inc]
-            if v == 0:
-                continue
-            chart_ax.barh(
-                yi, v, height=bar_height, left=left,
-                color=STACK_COLORS[inc],
-                edgecolor=T.COLOR_BG, linewidth=1.5,
-            )
-            # Label segment value: inside bar kalau cukup lebar, else
-            # outside dengan connector tipis (semua angka TERLIHAT)
-            if v >= max_total * 0.05:
-                chart_ax.text(
-                    left + v / 2, yi, str(v),
-                    ha="center", va="center",
-                    family="monospace", fontsize=10, weight=500,
-                    color=("white" if inc == "Low-income" else T.COLOR_HEADLINE),
-                )
-            else:
-                # Small segment: label di atas bar dengan vertical offset
-                chart_ax.annotate(
-                    str(v),
-                    xy=(left + v / 2, yi + bar_height / 2),
-                    xytext=(0, 6), textcoords="offset points",
-                    ha="center", va="bottom",
-                    family="monospace", fontsize=9, weight=500,
-                    color=STACK_COLORS[inc],
-                )
-            left += v
-
+        chart_ax.barh(
+            yi, row["total"], height=bar_height,
+            color=BAR_COLOR, edgecolor="none",
+        )
         # Total count annotation di ujung bar
         chart_ax.text(
             row["total"] + max_total * 0.015, yi,
             f"{row['total']} negara",
             ha="left", va="center",
-            family="serif", fontsize=16, weight=700,
-            color=T.COLOR_HEADLINE,
-        )
-
-    # ── Category labels kiri ──
-    for yi, (_, row) in zip(y_positions, counts.iterrows()):
-        cat_meta = next(c for c in LOOPHOLE_CATEGORIES
-                        if c["label"] == row["category"])
-        chart_ax.text(
-            -max_total * 0.02, yi + 0.18,
-            row["category"],
-            ha="right", va="center",
             family="serif", fontsize=13, weight=700,
             color=T.COLOR_HEADLINE,
         )
+
+    # ── Category labels kiri — cukup label utama (sublabel dihapus per revisi tim)
+    for yi, (_, row) in zip(y_positions, counts.iterrows()):
         chart_ax.text(
-            -max_total * 0.02, yi - 0.18,
-            cat_meta["sublabel"],
+            -max_total * 0.02, yi,
+            row["category"],
             ha="right", va="center",
-            family="sans-serif", fontsize=9, style="italic",
-            color=T.COLOR_MUTED,
+            family="serif", fontsize=12, weight=700,
+            color=T.COLOR_HEADLINE,
         )
 
     # Axis styling — minimalist
@@ -200,47 +173,19 @@ def render_panel_c(
         chart_ax.spines[spine].set_visible(False)
     chart_ax.tick_params(length=0)
 
-    # ── Legend in-panel (pojok kanan atas) ──
-    legend_y = len(counts) - 0.35
-    legend_x_base = max_total * 0.50
-    chart_ax.text(
-        legend_x_base, legend_y + 0.25, "Kelompok pendapatan:",
-        family="sans-serif", fontsize=9, color=T.COLOR_MUTED,
-        weight=600,
-    )
-    for i, inc in enumerate(INCOME_ORDER):
-        xi = legend_x_base + i * (max_total * 0.22)
-        chart_ax.add_patch(
-            plt.Rectangle(
-                (xi, legend_y - 0.10), max_total * 0.035, 0.22,
-                facecolor=STACK_COLORS[inc], edgecolor="none",
-            )
-        )
-        chart_ax.text(
-            xi + max_total * 0.045, legend_y + 0.01,
-            inc,
-            family="sans-serif", fontsize=9, color=T.COLOR_BODY,
-            va="center",
-        )
-
     # ── Footer caption dengan konteks "no protection" ──
     footer_ax.axis("off")
+    # Catatan di top, Sumber di bottom — gap explicit lewat va anchor
     footer_ax.text(
-        0.0, 0.8,
-        f"Catatan: {n_no_protect} negara lainnya tidak memiliki perlindungan sama sekali "
-        f"(usia di bawah 18 dibolehkan tanpa syarat apapun — di luar 3 kategori di atas).",
+        0.0, 0.92,
+        f"{n_no_protect} negara lainnya tidak memiliki perlindungan sama sekali. "
+        f"Anak dengan usia\n"
+        f"di bawah 18 tahun dibolehkan menikah secara hukum tanpa syarat tambahan apapun.",
         transform=footer_ax.transAxes,
         family="sans-serif", fontsize=9, color=T.COLOR_ACCENT,
-        weight=600, va="top",
+        weight=600, va="top", linespacing=1.4,
     )
-    footer_ax.text(
-        0.0, 0.25,
-        "Sumber: WORLD Policy Analysis Center, Child Marriage Laws 2023. "
-        "Kategori berdasarkan kode except_pc = 2 atau 3, except_crlaw = 2, except_preg = 2.",
-        transform=footer_ax.transAxes,
-        family="sans-serif", fontsize=8, color=T.COLOR_MUTED,
-        va="top",
-    )
+    # Sumber dihapus — sudah ada di footer poster utama
 
     return fig
 

@@ -63,22 +63,23 @@ def render_panel_d(
     series_by_region = _compute_region_series(df)
     n_complete = _count_complete_countries(df)
 
-    # Standalone mode — ukuran proporsional Panel D di A2 (lebar 390mm × tinggi 54mm)
-    # tambah ruang untuk title + footnote
+    # Title block diperbesar (1.4) supaya ada margin vertikal yang
+    # cukup antara title dan subtitle. hspace antar tile diperbesar
+    # supaya region title tidak overlap chart di atasnya.
     if fig is None:
         fig = plt.figure(figsize=(15.35, 4.5), dpi=150)
         outer = GridSpec(
             nrows=3, ncols=1,
             figure=fig,
-            height_ratios=[0.8, 3.2, 0.5],
-            hspace=0.35,
+            height_ratios=[1.4, 3.3, 0.4],
+            hspace=0.55,
             left=0.04, right=0.98, top=0.95, bottom=0.06,
         )
         title_ax = fig.add_subplot(outer[0])
         grid_spec = GridSpecFromSubplotSpec(
             nrows=2, ncols=3,
             subplot_spec=outer[1],
-            wspace=0.20, hspace=0.55,
+            wspace=0.22, hspace=1.10,
         )
         footer_ax = fig.add_subplot(outer[2])
     else:
@@ -87,139 +88,130 @@ def render_panel_d(
         inner = GridSpecFromSubplotSpec(
             nrows=3, ncols=1,
             subplot_spec=host_subplot_spec,
-            height_ratios=[0.8, 3.2, 0.5],
-            hspace=0.35,
+            height_ratios=[1.4, 3.3, 0.4],
+            hspace=0.55,
         )
         title_ax = fig.add_subplot(inner[0])
         grid_spec = GridSpecFromSubplotSpec(
             nrows=2, ncols=3,
             subplot_spec=inner[1],
-            wspace=0.20, hspace=0.55,
+            wspace=0.22, hspace=1.10,
         )
         footer_ax = fig.add_subplot(inner[2])
 
-    # ── Title & subtitle block ──
+    # ── Title & subtitle block — dengan margin vertikal jelas ──
     title_ax.axis("off")
     title_ax.text(
-        0.0, 0.85, "28 TAHUN PROGRES — TIDAK SEMUA DUNIA BERGERAK SAMA",
+        0.0, 0.92,
+        "Perkembangan Perlindungan Hukum Selama Periode 1995 - 2023",
         transform=title_ax.transAxes,
-        family="serif", fontsize=18, weight=700, color=T.COLOR_HEADLINE,
+        family="serif", fontsize=15, weight=900, color=T.COLOR_HEADLINE,
+        va="top",
     )
     title_ax.text(
-        0.0, 0.10,
-        "% negara dengan usia minimum pernikahan >= 18 dengan parental consent, 1995 → 2023",
+        0.0, 0.18,
+        "Persentase negara dengan usia minimum pernikahan ≥ 18 (dengan izin orang tua), 1995 - 2023.",
         transform=title_ax.transAxes,
-        family="sans-serif", fontsize=11, color=T.COLOR_MUTED,
+        family="sans-serif", fontsize=10, color=T.COLOR_MUTED,
+        va="top",
     )
 
-    # ── Grid 2×3 sparkline ──
+    # ── Grid 2×3 sparkline — STYLING UNIFORM untuk semua tile ──
+    LINE_WIDTH = 1.0       # tipis supaya chart lebih jelas terbaca
+    LINE_ALPHA = 0.95
+    FILL_ALPHA = 0.18
+    line_handles_for_legend = None
     for idx, region in enumerate(T.REGION_ORDER):
         row, col = divmod(idx, 3)
         ax = fig.add_subplot(grid_spec[row, col])
         data = series_by_region[region]
 
-        highlight = T.REGION_HIGHLIGHT.get(region)
-        is_highlighted = highlight is not None
-
-        # Line width lebih tebal kalau highlighted
-        lw_f = 2.2 if is_highlighted else 1.5
-        lw_m = 2.2 if is_highlighted else 1.5
-        alpha_main = 1.0 if is_highlighted else 0.75
-
-        # Filled gap area antara F dan M
-        fill_color = T.COLOR_FEMALE
-        fill_alpha = 0.22 if is_highlighted else 0.12
+        # Filled gap area — uniform color & alpha
         ax.fill_between(
             data["year"], data["f_pct"], data["m_pct"],
-            color=fill_color, alpha=fill_alpha, linewidth=0,
+            color=T.COLOR_FEMALE, alpha=FILL_ALPHA, linewidth=0,
         )
 
-        # Lines
-        ax.plot(
+        # Lines — uniform width & alpha (label di line pertama untuk legend)
+        m_line, = ax.plot(
             data["year"], data["m_pct"],
-            color=T.COLOR_MALE, lw=lw_m, alpha=alpha_main,
-            solid_capstyle="round",
+            color=T.COLOR_MALE, lw=LINE_WIDTH, alpha=LINE_ALPHA,
+            solid_capstyle="round", label="Laki-laki",
         )
-        ax.plot(
+        f_line, = ax.plot(
             data["year"], data["f_pct"],
-            color=T.COLOR_FEMALE, lw=lw_f, alpha=alpha_main,
-            solid_capstyle="round",
+            color=T.COLOR_FEMALE, lw=LINE_WIDTH, alpha=LINE_ALPHA,
+            solid_capstyle="round", label="Perempuan",
         )
+        if line_handles_for_legend is None:
+            line_handles_for_legend = (f_line, m_line)
 
-        # Endpoint marker
+        # Endpoint markers
         ax.plot([2023], [data["f_pct"].iloc[-1]],
-                marker="o", ms=4, color=T.COLOR_FEMALE, alpha=alpha_main)
+                marker="o", ms=3.5, color=T.COLOR_FEMALE)
         ax.plot([2023], [data["m_pct"].iloc[-1]],
-                marker="o", ms=4, color=T.COLOR_MALE, alpha=alpha_main)
+                marker="o", ms=3.5, color=T.COLOR_MALE)
 
         # Y-axis 0-100 konsisten
-        ax.set_ylim(0, 100)
+        ax.set_ylim(0, 105)
         ax.set_xlim(1995, 2023)
 
-        # Tick minimalis
         ax.set_yticks([0, 50, 100])
-        ax.set_yticklabels(["0", "50", "100%"], fontsize=8, color=T.COLOR_MUTED)
+        ax.set_yticklabels(["0", "50", "100%"], fontsize=7, color=T.COLOR_MUTED)
         ax.set_xticks([1995, 2023])
-        ax.set_xticklabels(["'95", "'23"], fontsize=8, color=T.COLOR_MUTED)
+        ax.set_xticklabels(["'95", "'23"], fontsize=7, color=T.COLOR_MUTED)
 
-        # Spine minimalis
         for spine in ["top", "right"]:
             ax.spines[spine].set_visible(False)
         ax.spines["left"].set_color(T.COLOR_GRIDLINE)
         ax.spines["bottom"].set_color(T.COLOR_GRIDLINE)
         ax.tick_params(length=2, width=0.5)
 
-        # Region title + gap 2023
+        # Region title — DI ATAS tile (loc top, pad besar), uniform color
+        ax.set_title(
+            region, loc="left", pad=6,
+            family="serif", fontsize=11, weight=700,
+            color=T.COLOR_HEADLINE,
+        )
+
+        # Gap annotation di ATAS chart (di luar y=100% area) — tidak
+        # collide dengan endpoint line di mana pun. Pakai simbol ▲ (stock
+        # up triangle) untuk gap positif, "parity" untuk gap = 0.
         f_2023 = data["f_pct"].iloc[-1]
         m_2023 = data["m_pct"].iloc[-1]
         gap = m_2023 - f_2023
-
-        title_color = highlight if is_highlighted else T.COLOR_HEADLINE
-        ax.set_title(
-            region, loc="left", pad=8,
-            family="serif", fontsize=12, weight=700,
-            color=title_color,
-        )
-        # Gap annotation kanan atas
-        gap_label = f"gap +{gap:.0f}pp" if gap > 0 else "gender parity"
+        # Pakai family="sans-serif" (Source Sans 3) supaya glyph ▲ ter-render —
+        # IBM Plex Mono tidak include U+25B2.
+        gap_label = f"▲ {gap:.0f}pp" if gap > 0 else "kesetaraan"
         ax.text(
-            0.98, 0.97, gap_label,
+            1.0, 1.04, gap_label,
             transform=ax.transAxes,
-            ha="right", va="top",
-            family="monospace", fontsize=9,
-            color=highlight if is_highlighted else T.COLOR_BODY,
-            weight="bold" if is_highlighted else "normal",
+            ha="right", va="bottom",
+            family="sans-serif", fontsize=9, weight=600,
+            color=T.COLOR_BODY,
         )
 
-        # Endpoint label 2023 (angka persentase) — hanya untuk highlighted
-        if is_highlighted:
-            ax.annotate(
-                f"F {f_2023:.0f}%",
-                xy=(2023, f_2023),
-                xytext=(4, -2), textcoords="offset points",
-                fontsize=8, color=T.COLOR_FEMALE, weight=600,
-                ha="left", va="top",
-            )
-            ax.annotate(
-                f"M {m_2023:.0f}%",
-                xy=(2023, m_2023),
-                xytext=(4, 2), textcoords="offset points",
-                fontsize=8, color=T.COLOR_MALE, weight=600,
-                ha="left", va="bottom",
-            )
-
-    # ── Footer caption ──
+    # ── Footer: line chart legend (proper) + minor caption ──
     footer_ax.axis("off")
-    footer_caption = (
-        f"Merah = perempuan, biru = laki-laki, area berwarna = gender gap. "
-        f"Berdasarkan {n_complete} negara dengan data lengkap 1995-2023. "
-        f"Sumber: WORLD Policy Analysis Center, Child Marriage Laws 2023."
-    )
+    if line_handles_for_legend is not None:
+        f_line, m_line = line_handles_for_legend
+        footer_ax.legend(
+            handles=[f_line, m_line],
+            loc="center left",
+            bbox_to_anchor=(0.0, 0.5),
+            ncol=2,
+            frameon=False,
+            fontsize=9,
+            handlelength=2.0, handleheight=0.8,
+            columnspacing=1.5,
+            labelcolor=T.COLOR_BODY,
+        )
     footer_ax.text(
-        0.0, 0.5, footer_caption,
+        1.0, 0.5,
+        f"Berdasarkan data dari {n_complete} negara pada periode 1995 - 2023.",
         transform=footer_ax.transAxes,
         family="sans-serif", fontsize=8, color=T.COLOR_MUTED,
-        va="center",
+        va="center", ha="right",
     )
 
     return fig

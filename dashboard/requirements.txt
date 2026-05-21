@@ -1,0 +1,7 @@
+# Dependency runtime dashboard (Streamlit Community Cloud).
+# Pinned untuk reproducibility. xlrd TIDAK diperlukan saat runtime —
+# data sudah di-generate ke dashboard/data/dashboard_data.csv oleh prepare_data.py.
+streamlit==1.40.2
+plotly==5.24.1
+pandas==2.2.3
+numpy==2.1.3

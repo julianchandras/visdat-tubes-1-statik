@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m jupyter:*)",
+      "Bash(where python:*)",
+      "Bash(dir .venvScriptspython.exe)",
+      "Bash(C:Python312python.exe -m venv:*)",
+      "Bash(.venvScriptspip.exe install -r requirements.txt)",
+      "Bash(\"C:/Python312/python.exe\" -m venv .venv)",
+      "Bash(.venv/Scripts/pip.exe install:*)",
+      "Bash(.venv/Scripts/jupyter-nbconvert.exe:*)",
+      "Bash(.venv/Scripts/python.exe:*)"
+    ]
+  }
+}

@@ -14,19 +14,24 @@ from pathlib import Path
 # Color tokens
 # ─────────────────────────────────────────────────────────────
 
-# ColorBrewer Reds 4-class strict — lightness monoton menurun + chroma
-# meningkat bersama. Worst (kode 1) = PALING GELAP + SATURATED, bukan muted
-# maroon. Fix psycho-visual trap di mana code 3 (pure red) terlihat paling
-# "berat" padahal bukan kategori terburuk.
+# Palette revisi (feedback bu Desi + tim):
+# - Parity (5) ganti ke HIJAU-TEAL: metafora "aman/baik" yang jelas berbeda
+#   dari spektrum merah. Bukan lagi "merah pucat = agak buruk" trap.
+# - Worst (1) tetap dark red saturated.
+# - Unknown (9) dipisah dari spektrum merah: KUNING gold dengan dot pattern
+#   subtle = "buruk tapi ambigu", warning warna universal.
+# - No-data dipindah ke hatched line (sebelumnya tekstur Unknown).
 LOOP_SUMM_COLORS = {
     1.0: "#A50F15",   # worst: gender inequality + girls <=13
     2.0: "#DE2D26",   # inequality AND girls 14-17
-    3.0: "#FCAE91",   # inequality OR girls 14-17 (salmon pucat)
-    5.0: "#FEE5D9",   # best: parity + min 18+ (cream lightest)
-    9.0: "#9E9E9E",   # unknown (religious/customary) — dark enough + hatched
+    3.0: "#FCAE91",   # inequality OR girls 14-17 (salmon)
+    5.0: "#76B900",   # parity + min 18+ — NVIDIA green (revisi tim)
+    9.0: "#FFD60A",   # unknown — bright yellow (revisi tim)
 }
-UNKNOWN_HATCH = "///"
-NO_DATA_COLOR = "#F5F5F5"
+PARITY_ALPHA = 0.80        # opacity hijau parity (revisi tim, bukan 100%)
+UNKNOWN_HATCH = "..."      # dot pattern padat/crowded (revisi tim)
+NO_DATA_COLOR = "#D9D9D9"  # light grey
+NO_DATA_HATCH = "///"      # hatched line untuk no-data
 
 COLOR_FEMALE = "#C71E3A"
 COLOR_MALE = "#1F4E79"
@@ -35,8 +40,8 @@ COLOR_HEADLINE = "#0F4C5C"
 COLOR_BODY = "#2D3142"
 COLOR_MUTED = "#8A8F9A"
 COLOR_ACCENT = "#E07A5F"
-COLOR_BG = "#FAF8F3"
-COLOR_GRIDLINE = "#E0DDD5"
+COLOR_BG = "#F8F9FA"      # Cool off-white (revisi tim, sebelumnya warm beige)
+COLOR_GRIDLINE = "#DDE0E3"  # Cool grey gridline selaras background
 
 COLOR_DANGER = "#C71E3A"
 COLOR_SAFE = "#2A9D8F"
