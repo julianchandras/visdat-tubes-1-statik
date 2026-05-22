@@ -94,7 +94,7 @@ PLOTLY_CFG = {"displayModeBar": True, "scrollZoom": True,
 # ── Section 1: Peta choropleth (hero) ──
 st.subheader("Peta Perlindungan Anak dari Pernikahan Dini")
 st.caption("Arahkan kursor untuk detail negara; scroll/drag untuk zoom & geser.")
-st.plotly_chart(map_choropleth.render(fdf), use_container_width=True, config=PLOTLY_CFG)
+st.plotly_chart(map_choropleth.render(fdf), width="stretch", config=PLOTLY_CFG)
 
 st.divider()
 
@@ -103,11 +103,11 @@ col_left, col_right = st.columns(2)
 with col_left:
     st.subheader("Kesenjangan Gender menurut Pendapatan")
     st.caption("% negara dengan usia minimum pernikahan ≥ 18 tahun.")
-    st.plotly_chart(gender_income.render(fdf), use_container_width=True, config=PLOTLY_CFG)
+    st.plotly_chart(gender_income.render(fdf), width="stretch", config=PLOTLY_CFG)
 with col_right:
     st.subheader("Celah Hukum Pernikahan Anak")
     st.caption("Jumlah negara per tipe celah hukum, dipecah tingkat pendapatan.")
-    st.plotly_chart(loopholes.render(fdf), use_container_width=True, config=PLOTLY_CFG)
+    st.plotly_chart(loopholes.render(fdf), width="stretch", config=PLOTLY_CFG)
 
 st.divider()
 
@@ -125,7 +125,7 @@ region_arg = None if region_opt == "Semua region" else region_opt
 with ts_col1:
     st.plotly_chart(
         timeseries.render(fdf, year_range=year_range, region=region_arg),
-        use_container_width=True, config=PLOTLY_CFG,
+        width="stretch", config=PLOTLY_CFG,
     )
 
 st.divider()
@@ -134,7 +134,7 @@ st.divider()
 comp_col, tbl_col = st.columns([1, 1.4])
 with comp_col:
     st.subheader("Komposisi Tingkat Perlindungan")
-    st.plotly_chart(composition.render(fdf), use_container_width=True, config=PLOTLY_CFG)
+    st.plotly_chart(composition.render(fdf), width="stretch", config=PLOTLY_CFG)
 with tbl_col:
     st.subheader("Data Negara Terpilih")
     table_cols = ["country", "region", "wb_econ_label", "loop_summ_label",
@@ -144,7 +144,7 @@ with tbl_col:
         "loop_summ_label": "Perlindungan",
         "minage_fem_loop_label": "Usia min. P", "minage_mal_loop_label": "Usia min. L",
     })
-    st.dataframe(show, use_container_width=True, height=320, hide_index=True)
+    st.dataframe(show, width="stretch", height=320, hide_index=True)
     st.download_button(
         "⬇️ Unduh data terpilih (CSV)",
         data=fdf.to_csv(index=False).encode("utf-8"),
