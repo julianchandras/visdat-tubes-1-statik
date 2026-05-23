@@ -167,11 +167,8 @@ def render(
     fig.update_layout(
         **T.PLOTLY_LAYOUT,
         height=520,
-        legend=dict(
-            title="Tingkat perlindungan",
-            orientation="h", yanchor="bottom", y=-0.12,
-            xanchor="center", x=0.5, font=dict(size=11),
-        ),
+        showlegend=False,   # legenda di-handle via HTML di app.py — shared
+                            # antara peta + pie, center secara horizontal.
         clickmode="event+select",
     )
     return fig

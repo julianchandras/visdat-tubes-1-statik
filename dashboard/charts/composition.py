@@ -64,16 +64,19 @@ def render(full_df, severity_filter: list[float] | None = None) -> go.Figure:
         labels=labels, values=values, hole=0.55,
         marker=dict(colors=rgba_colors, line=dict(color="white", width=1.5)),
         sort=False, direction="clockwise",
-        textinfo="value", textfont=dict(size=13),
-        hovertemplate="<b>%{label}</b><br>%{value} negara (%{percent})<extra></extra>",
+        textinfo="value", textfont=dict(size=12),
+        hovertemplate=(
+            "<b>%{label}</b><br>%{value} negara (%{percent})"
+            "<br><i>Klik untuk memfilter</i><extra></extra>"
+        ),
         # customdata = kode loop_summ untuk handler klik di app.py.
         customdata=codes,
     ))
     layout = {k: v for k, v in T.PLOTLY_LAYOUT.items() if k != "colorway"}
     fig.update_layout(
         **layout,
-        height=360,
-        showlegend=False,    # legenda di-share dengan peta
+        height=240,
+        showlegend=False,    # legenda di-share lewat HTML legend di app.py
         clickmode="event+select",
     )
     return fig

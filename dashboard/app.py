@@ -13,7 +13,7 @@ import theme as T
 import data as datalib
 from charts import (
     map_choropleth, gender_income, loopholes, timeseries, composition,
-    protect_ladder, erosion_heatmap,
+    protect_ladder, erosion_sankey,
 )
 
 # ── Page config ──
@@ -214,6 +214,27 @@ with donut_col:
         on_select="rerun", selection_mode=["points"], key="pie",
     )
 
+# ── Shared legend (HTML) — di tengah, full-width di bawah row peta+pie ──
+# Plotly legend terikat per-figure & tidak bisa spanning antar kolom Streamlit.
+# Solusinya: render legend custom via HTML supaya benar2 center di antara peta
+# & pie (jadi satu visual unit), tidak menumpuk di pojok kanan peta.
+def _swatch(color: str, label: str) -> str:
+    return (
+        f'<span style="display:inline-flex; align-items:center; '
+        f'margin:0 0.6em; font-size:12px; color:#2D3142;">'
+        f'<span style="display:inline-block; width:14px; height:14px; '
+        f'background:{color}; border:1px solid #FFF; border-radius:3px; '
+        f'margin-right:0.4em;"></span>{label}</span>'
+    )
+
+legend_html = '<div style="text-align:center; padding:0.4em 0 0.8em 0;">'
+legend_html += '<span style="font-size:12px; color:#8A8F9A; margin-right:0.5em;">Tingkat perlindungan:</span>'
+for code in T.LOOP_SUMM_ORDER:
+    legend_html += _swatch(T.LOOP_SUMM_COLORS[code], T.LOOP_SUMM_LABELS[code])
+legend_html += _swatch(T.NO_DATA_COLOR, T.LABEL_NO_DATA)
+legend_html += '</div>'
+st.markdown(legend_html, unsafe_allow_html=True)
+
 # ── Handler event: pie click → schedule severities update untuk run berikutnya
 pie_pts = (pie_event.get("selection", {}) or {}).get("points", []) if pie_event else []
 if pie_pts:
@@ -237,35 +258,30 @@ if map_pts:
 
 st.divider()
 
-# ── Section 1b: Tangga Perlindungan per Umur ──
+# ── Section 1b: Tangga Perlindungan per Umur (P & L sandingkan per umur) ──
 st.subheader("Tangga Perlindungan menurut Umur Anak")
 st.caption(
     "Untuk anak umur 13, 15, dan 17 tahun — di berapa negara mereka secara hukum "
     "dilarang menikah, hanya boleh dgn pengadilan / kehamilan, boleh dgn izin orang "
-    "tua, atau tanpa pembatasan sama sekali?"
+    "tua, atau tanpa pembatasan sama sekali? Perempuan dan laki-laki disandingkan."
 )
-gender_choice = st.radio(
-    "Tampilkan untuk", options=["Anak perempuan", "Anak laki-laki"],
-    horizontal=True, label_visibility="collapsed",
-    key="protect_gender",
-)
-gender_key = "girl" if gender_choice == "Anak perempuan" else "boy"
 st.plotly_chart(
-    protect_ladder.render(fdf, gender=gender_key),
+    protect_ladder.render(fdf),
     width="stretch", config=STATIC_CFG,
 )
 
 st.divider()
 
-# ── Section 1c: Heatmap Erosi Hukum ──
-st.subheader("Erosi Hukum: Dari Mana Loophole Berasal?")
+# ── Section 1c: Sankey Erosi Hukum (menggantikan heatmap) ──
+st.subheader("Erosi Hukum: Aliran Negara Antar Layer Hukum")
 st.caption(
-    "Tiap baris = satu negara (Top-30 dengan erosi terbesar dari subset terfilter). "
-    "Kolom = 5 layer hukum dari yang paling murni (Legal) hingga paling longgar "
-    "(Semua exception). Warna = usia minimum yang berlaku di layer tsb."
+    "Aliran negara antar 3 layer hukum: Legal (tanpa exception) → Loop "
+    "(+izin ortu/adat) → Any (+kehamilan & court approval). Lebar pita = jumlah "
+    "negara. Pita yang 'jatuh' dari ≥18 ke kategori usia lebih muda = erosi "
+    "perlindungan akibat exception yang diakui hukum."
 )
 st.plotly_chart(
-    erosion_heatmap.render(fdf, top_n=30),
+    erosion_sankey.render(fdf),
     width="stretch", config=STATIC_CFG,
 )
 
