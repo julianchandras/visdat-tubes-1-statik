@@ -308,21 +308,20 @@ if map_pts:
 
 st.divider()
 
-# ── Section 1b: Tangga Perlindungan per Umur (P & L sandingkan per umur) ──
-st.subheader("Tangga Perlindungan menurut Umur Anak")
-st.caption(
-    "Untuk anak umur 13, 15, dan 17 tahun — di berapa negara mereka secara hukum "
-    "dilarang menikah, hanya boleh dgn pengadilan / kehamilan, boleh dgn izin orang "
-    "tua, atau tanpa pembatasan sama sekali? Perempuan dan laki-laki disandingkan."
-)
-st.plotly_chart(
-    protect_ladder.render(fdf),
-    width="stretch", config=STATIC_CFG,
-)
+# ── Section 2 (urutan baru): Gender×Income | Loophole — analisis kategorik ──
+col_left, col_right = st.columns(2)
+with col_left:
+    st.subheader("Kesenjangan Gender menurut Pendapatan")
+    st.caption("% negara dengan usia minimum pernikahan ≥ 18 tahun.")
+    st.plotly_chart(gender_income.render(fdf), width="stretch", config=STATIC_CFG)
+with col_right:
+    st.subheader("Celah Hukum Pernikahan Anak")
+    st.caption("Jumlah negara per tipe celah hukum, dipecah tingkat pendapatan.")
+    st.plotly_chart(loopholes.render(fdf), width="stretch", config=STATIC_CFG)
 
 st.divider()
 
-# ── Section 1c: Sankey Erosi Hukum (menggantikan heatmap) ──
+# ── Section 3 (urutan baru): Sankey Erosi Hukum — mekanisme & layer story ──
 st.subheader("Erosi Hukum: Aliran Negara Antar Layer Hukum")
 st.caption(
     "Aliran negara antar 3 layer hukum: Legal (tanpa exception) → Loop "
@@ -337,27 +336,37 @@ st.plotly_chart(
 
 st.divider()
 
-# ── Section 2: Gender×Income | Loophole ──
-col_left, col_right = st.columns(2)
-with col_left:
-    st.subheader("Kesenjangan Gender menurut Pendapatan")
-    st.caption("% negara dengan usia minimum pernikahan ≥ 18 tahun.")
-    st.plotly_chart(gender_income.render(fdf), width="stretch", config=STATIC_CFG)
-with col_right:
-    st.subheader("Celah Hukum Pernikahan Anak")
-    st.caption("Jumlah negara per tipe celah hukum, dipecah tingkat pendapatan.")
-    st.plotly_chart(loopholes.render(fdf), width="stretch", config=STATIC_CFG)
-
-st.divider()
-
-# ── Section 3: Timeseries ──
-st.subheader("Perkembangan Perlindungan Hukum, 1995–2023")
-ts_col1, ts_col2 = st.columns([3, 1])
-with ts_col2:
+# ── Section 4 (paling bawah): Tangga Umur ║ Timeseries — deep dive granular ──
+bot_left, bot_right = st.columns([1, 1])
+with bot_left:
+    st.subheader("Tangga Perlindungan menurut Umur Anak")
+    st.caption(
+        "Untuk anak umur ini, di berapa negara mereka secara hukum dilarang "
+        "menikah, hanya boleh dgn pengadilan/kehamilan, boleh dgn izin orang tua, "
+        "atau tanpa pembatasan?"
+    )
+    age_choice = st.radio(
+        "Umur anak",
+        options=[13, 15, 17],
+        horizontal=True,
+        format_func=lambda a: f"{a} tahun",
+        key="protect_age",
+        label_visibility="collapsed",
+    )
+    st.plotly_chart(
+        protect_ladder.render(fdf, age=age_choice),
+        width="stretch", config=STATIC_CFG,
+    )
+with bot_right:
+    st.subheader("Perkembangan Perlindungan Hukum, 1995–2023")
+    st.caption(
+        "% negara dengan usia min. ≥ 18 (dengan izin orang tua). Geser rentang "
+        "tahun untuk fokus periode tertentu."
+    )
     year_range = st.slider(
         "Rentang tahun", min_value=1995, max_value=2023, value=(1995, 2023),
+        label_visibility="collapsed",
     )
-with ts_col1:
     st.plotly_chart(
         timeseries.render(fdf, year_range=year_range),
         width="stretch", config=STATIC_CFG,
