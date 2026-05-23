@@ -36,23 +36,36 @@ LOOP_SUMM_ORDER = [5.0, 3.0, 2.0, 1.0, 9.0]
 NO_DATA_COLOR = "#9A9A9A"   # medium grey — kontras lebih kuat dari 'di luar filter'
 LABEL_NO_DATA = "Tanpa data"
 
-# ── Variant DIM (warna asli + alpha rendah) untuk mode focus 1 negara ──
-# Mode focus: negara non-focus DIBURAMKAN dgn warna kategori asli (bukan gray
-# polos seperti mode filter). User tetap dapat konteks loop_summ neighbours.
-DIM_ALPHA = 0.30
+# ── Variant DIM untuk mode focus 1 negara ──
+# Sebelumnya pakai alpha-only (rgba(... ,0.30)) → warna naturally pucat seperti
+# pink #FFA6A4 jadi hampir indistinguishable dari non-focus pink lain.
+# Solusi (revisi tim, opsi 1): DESATURATE — blend warna ke gray berdasarkan
+# luminance + alpha sedang. Hasil: setiap kategori jadi muted neutral dgn
+# hint warna asli (pink → beige-pink, hijau → olive-grey, dst). Plus border
+# thicker pada focus trace di map_choropleth.py (opsi 3) untuk extra "pop".
+DIM_GRAY_BLEND = 0.70      # 70% blend ke gray; 30% sisa warna asli
+DIM_ALPHA = 0.55           # alpha menengah (tidak terlalu pucat)
 
 
-def _hex_to_rgba(hex_color: str, alpha: float) -> str:
+def _desaturate_rgba(hex_color: str,
+                     gray_blend: float = DIM_GRAY_BLEND,
+                     alpha: float = DIM_ALPHA) -> str:
+    """Convert hex → rgba dgn blend ke gray (luminance-based) + alpha."""
     h = hex_color.lstrip("#")
     r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
-    return f"rgba({r},{g},{b},{alpha:.2f})"
+    # Rec. 709 luminance approximation
+    Y = 0.299 * r + 0.587 * g + 0.114 * b
+    nr = int(round(r * (1 - gray_blend) + Y * gray_blend))
+    ng = int(round(g * (1 - gray_blend) + Y * gray_blend))
+    nb = int(round(b * (1 - gray_blend) + Y * gray_blend))
+    return f"rgba({nr},{ng},{nb},{alpha:.2f})"
 
 
 LOOP_SUMM_COLORS_DIM = {
-    code: _hex_to_rgba(color, DIM_ALPHA)
+    code: _desaturate_rgba(color)
     for code, color in LOOP_SUMM_COLORS.items()
 }
-NO_DATA_COLOR_DIM = _hex_to_rgba(NO_DATA_COLOR, DIM_ALPHA)
+NO_DATA_COLOR_DIM = _desaturate_rgba(NO_DATA_COLOR)
 
 # Bounding box per region untuk auto-zoom (lon_min, lon_max, lat_min, lat_max).
 # Diset agar negara di tiap region masuk frame penuh, sedikit padding di tepi.

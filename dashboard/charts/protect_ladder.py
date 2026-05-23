@@ -4,9 +4,14 @@ Saat user pilih umur (13 / 15 / 17 tahun lewat widget filter di app.py), render
 DUA bar horizontal sandingkan: Perempuan & Laki-laki, masing-masing 4 kategori
 stack (Dilarang / Court+pregnancy / Izin ortu / Tanpa pembatasan).
 
-Sebelumnya: small multiples 3 panel (1×3) — semua umur sekaligus. Diganti ke
-single-age + filter (revisi tim): chart lebih kompak (slot half-width bersama
-timeseries di bottom row), annotation lebih lega untuk segment kecil terbaca.
+Angka per segment di-render INSIDE bar via Plotly built-in `text` (bukan
+annotations layer). Trade-off:
+- Inside text otomatis ikut visibility trace → saat user klik legend untuk
+  toggle kategori, angka kategori ybs juga hilang (TIDAK orphan). Revisi tim:
+  "anotasi angka bagi kategori dinonaktifkan seharusnya dihapus".
+- Segment kecil (count < threshold) bisa kurang terbaca; mitigasi: warna
+  text per-kategori berbasis luminance bg (dark text pada bg terang, white
+  pada bg gelap) + bold.
 """
 from __future__ import annotations
 
@@ -18,14 +23,23 @@ import theme as T
 GENDERS = (("girl", "Perempuan"), ("boy", "Laki-laki"))
 
 
-def render(fdf, age: int = 13) -> go.Figure:
-    """Render single-age view.
+def _text_color_for_bg(hex_color: str) -> str:
+    """Pilih warna text (dark navy vs white) berdasarkan luminance bg.
 
-    Parameters
-    ----------
-    fdf : DataFrame negara terfilter.
-    age : 13, 15, atau 17 → memilih kolom protect_girl_{age} & protect_boy_{age}.
+    Threshold 140 di skala 0..255 — cukup baik untuk 4 PROTECT_COLORS:
+    - hijau gelap #1A7F3C → white
+    - kuning #F4B400 → dark
+    - terracotta #E07A5F → dark
+    - dark red #7B0000 → white
     """
+    h = hex_color.lstrip("#")
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    Y = 0.299 * r + 0.587 * g + 0.114 * b
+    return "#2D3142" if Y > 140 else "white"
+
+
+def render(fdf, age: int = 13) -> go.Figure:
+    """Render single-age view."""
     needed = [f"protect_{g}_{age}" for g, _ in GENDERS]
     missing = [c for c in needed if c not in fdf.columns]
     if missing:
@@ -40,23 +54,13 @@ def render(fdf, age: int = 13) -> go.Figure:
         fig.update_xaxes(visible=False); fig.update_yaxes(visible=False)
         return T.lock_static(fig)
 
-    # Hitung count per (gender, kategori) + posisi midpoint kumulatif untuk
-    # anchor annotation outside bar.
+    # Hitung count per (gender, kategori).
     gender_counts: dict[str, dict[float, int]] = {}
-    annotations_data = []
     for gkey, glabel in GENDERS:
         column = f"protect_{gkey}_{age}"
         gender_counts[glabel] = {
             code: int((fdf[column] == code).sum()) for code in T.PROTECT_ORDER
         }
-        cum = 0
-        for code in T.PROTECT_ORDER:
-            n = gender_counts[glabel][code]
-            if n > 0:
-                annotations_data.append(
-                    (glabel, cum + n / 2, n, T.PROTECT_COLORS[code])
-                )
-            cum += n
 
     fig = go.Figure()
     for code in T.PROTECT_ORDER:
@@ -67,40 +71,33 @@ def render(fdf, age: int = 13) -> go.Figure:
             f"{T.PROTECT_LABELS[code]}: {n} negara"
             for (_, glabel), n in zip(GENDERS, xs)
         ]
+        text_color = _text_color_for_bg(T.PROTECT_COLORS[code])
         fig.add_trace(go.Bar(
             y=ys, x=xs, orientation="h",
             name=T.PROTECT_LABELS[code],
             marker_color=T.PROTECT_COLORS[code],
+            # Inside text — otomatis hilang saat user toggle kategori dari
+            # legend (Plotly menghilangkan trace, text ikut hilang).
+            text=[f"<b>{n}</b>" if n > 0 else "" for n in xs],
+            textposition="inside",
+            insidetextanchor="middle",
+            textfont=dict(size=10, color=text_color),
             hovertext=hover_lines,
             hovertemplate="%{hovertext}<extra></extra>",
         ))
-
-    # Annotations: keduanya di ATAS bar (yshift +32), warna sesuai kategori.
-    # yshift dinaikkan dari +22 → +32 supaya angka jelas DI LUAR bar (revisi
-    # tim: bar height pixel ternyata lebih besar dari estimasi awal — bar
-    # half ~27px di subplot height 280, jadi +22 masih dalam area bar).
-    for glabel, mid_x, n, color in annotations_data:
-        fig.add_annotation(
-            x=mid_x, y=glabel,
-            yshift=32,
-            text=f"<b>{n}</b>",
-            showarrow=False,
-            font=dict(size=10, color=color, family=T.FONT_SANS),
-            xanchor="center",
-        )
 
     layout = {k: v for k, v in T.PLOTLY_LAYOUT.items() if k != "colorway"}
     fig.update_layout(
         **layout,
         barmode="stack",
-        height=320,   # naik dari 280 supaya ada ruang vertikal untuk yshift+32
+        height=280,
         showlegend=True,
         legend=dict(
             orientation="h", yanchor="bottom", y=-0.35,
             xanchor="center", x=0.5, font=dict(size=10),
             traceorder="normal",
         ),
-        bargap=0.55,
+        bargap=0.40,
     )
     fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False)
     fig.update_yaxes(

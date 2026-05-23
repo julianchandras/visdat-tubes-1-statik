@@ -86,15 +86,31 @@ def render(
         custom_data=["country", "loop_summ_label", "minage_fem_loop_label",
                      "minage_mal_loop_label", "wb_econ_label"],
     )
-    # Border + sembunyikan trace dim/filter-dim dari legend (clutter).
+    # Border styling. Khusus mode FOCUS: trace yg cuma berisi negara focus
+    # (kategori loop_summ asli, tanpa DIM_SUFFIX) dapat BORDER TEBAL TEAL
+    # kontras supaya "pop" — solusi opsi 3 untuk masalah pink muda yg
+    # hampir indistinguishable dari non-focus pink saat sekedar di-alpha.
+    focus_kategori = None
+    if focus_iso3:
+        focus_row = d[d["iso3"] == focus_iso3]
+        if not focus_row.empty:
+            focus_loop_summ = focus_row.iloc[0].get("loop_summ")
+            focus_kategori = T.LOOP_SUMM_SHORT.get(
+                focus_loop_summ, T.LABEL_NO_DATA,
+            )
     for trace in fig.data:
         name = trace.name or ""
         is_dim_variant = DIM_SUFFIX in name
         is_filter_dim = name == DIMMED_LABEL
+        is_focus_trace = (focus_iso3 and name == focus_kategori
+                          and not is_dim_variant)
         if is_dim_variant or is_filter_dim:
             trace.marker.line.color = "#FFFFFF"
             trace.marker.line.width = 0.3
             trace.showlegend = False
+        elif is_focus_trace:
+            trace.marker.line.color = T.COLOR_HEADLINE
+            trace.marker.line.width = 2.5
         else:
             trace.marker.line.color = "#FFFFFF"
             trace.marker.line.width = 0.7
