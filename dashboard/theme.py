@@ -50,6 +50,51 @@ COLOR_GRIDLINE = "#DDE0E3"
 COLOR_DANGER = "#C71E3A"
 COLOR_SAFE = "#2A9D8F"
 
+# ── Palet "Tangga Perlindungan per Umur" — 4 tingkat protect_girl_* / protect_boy_*
+# Urutan moral: hijau (paling protektif) → kuning → orange → merah (tanpa perlindungan).
+# Sengaja TIDAK pakai 5 warna loop_summ supaya secara visual berbeda — ini variabel berbeda.
+PROTECT_COLORS = {
+    5.0: "#1A7F3C",   # Dilarang secara hukum — paling protektif (hijau gelap)
+    3.0: "#F4B400",   # Hanya court approval / pregnancy — kuning warning
+    2.0: "#E07A5F",   # Boleh dgn izin ortu / adat — terracotta accent
+    1.0: "#7B0000",   # Tanpa pembatasan — merah pekat (paling parah)
+}
+PROTECT_LABELS = {
+    5.0: "Dilarang secara hukum",
+    3.0: "Hanya court approval / kehamilan",
+    2.0: "Boleh dgn izin orang tua / adat",
+    1.0: "Tanpa pembatasan",
+}
+PROTECT_ORDER = [5.0, 3.0, 2.0, 1.0]   # paling protektif → paling parah
+
+# ── Palet usia minimum untuk Heatmap Erosi — 5 step ordinal usia.
+# Dibedakan dari LOOP_SUMM_COLORS karena ini variabel berbeda (usia, bukan composite).
+# Skema: makin tua usia min, makin biru-tenang; makin muda, makin merah-alert.
+MINAGE_COLORS = {
+    5.0: "#1F4E79",   # ≥18 thn — biru tenang (aman)
+    3.0: "#7BAEBF",   # 16-17 thn
+    2.0: "#E07A5F",   # 14-15 thn
+    1.0: "#7B0000",   # ≤13 thn — merah gelap
+    9.0: "#9A9A9A",   # Unknown adat/agama — abu netral
+}
+MINAGE_LABELS = {
+    5.0: "≥ 18 tahun",
+    3.0: "16-17 tahun",
+    2.0: "14-15 tahun",
+    1.0: "≤ 13 tahun",
+    9.0: "Tidak diketahui",
+}
+MINAGE_ORDER = [5.0, 3.0, 2.0, 1.0, 9.0]
+
+# Nama-nama layer 5-step "tangga erosi" untuk Heatmap (urutan: paling murni → paling longgar).
+EROSION_LAYERS = [
+    ("minage_fem_leg",   "Legal"),
+    ("minage_fem_pc",    "+ Izin ortu"),
+    ("minage_fem_crlaw", "+ Adat/agama"),
+    ("minage_fem_loop",  "Loophole gab."),
+    ("minage_fem_any",   "Semua exception"),
+]
+
 # ── Palet income (selaras Panel C poster — teal monokromatik) ──
 INCOME_COLORS = {
     "Low-income":    "#0F4C5C",

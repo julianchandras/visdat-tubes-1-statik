@@ -13,6 +13,7 @@ import theme as T
 import data as datalib
 from charts import (
     map_choropleth, gender_income, loopholes, timeseries, composition,
+    protect_ladder, erosion_heatmap,
 )
 
 # ── Page config ──
@@ -177,6 +178,44 @@ with info_col:
     elif clicked_iso3:
         detail = datalib.country_detail(df, clicked_iso3)
     render_country_detail(detail)
+
+st.divider()
+
+# ── Section 1b: Tangga Perlindungan per Umur (protect_girl_* / protect_boy_*) ──
+# Pertanyaan: untuk anak umur 13/15/17, di berapa negara hukum melindungi mereka?
+# Teknik: small multiples 3 panel side-by-side, plus toggle gender.
+st.subheader("Tangga Perlindungan menurut Umur Anak")
+st.caption(
+    "Untuk anak umur 13, 15, dan 17 tahun — di berapa negara mereka secara hukum "
+    "dilarang menikah, hanya boleh dgn pengadilan / kehamilan, boleh dgn izin orang "
+    "tua, atau tanpa pembatasan sama sekali?"
+)
+gender_choice = st.radio(
+    "Tampilkan untuk", options=["Anak perempuan", "Anak laki-laki"],
+    horizontal=True, label_visibility="collapsed",
+    key="protect_gender",
+)
+gender_key = "girl" if gender_choice == "Anak perempuan" else "boy"
+st.plotly_chart(
+    protect_ladder.render(fdf, gender=gender_key),
+    width="stretch", config=STATIC_CFG,
+)
+
+st.divider()
+
+# ── Section 1c: Heatmap Erosi Hukum (minage_*_leg → pc → crlaw → loop → any) ──
+# Pertanyaan: dari layer mana erosi datang? Apakah dari izin ortu atau adat/agama?
+# Teknik: heatmap matrix (country × indicator).
+st.subheader("Erosi Hukum: Dari Mana Loophole Berasal?")
+st.caption(
+    "Tiap baris = satu negara (Top-30 dengan erosi terbesar dari subset terfilter). "
+    "Kolom = 5 layer hukum dari yang paling murni (Legal) hingga paling longgar "
+    "(Semua exception). Warna = usia minimum yang berlaku di layer tsb."
+)
+st.plotly_chart(
+    erosion_heatmap.render(fdf, top_n=30),
+    width="stretch", config=STATIC_CFG,
+)
 
 st.divider()
 

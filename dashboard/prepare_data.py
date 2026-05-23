@@ -48,14 +48,41 @@ LOOP_SUMM_LABELS = {
     9.0: "Mungkin < 18 (diatur adat/agama)",
 }
 
+# protect_girl_*/protect_boy_*: keadaan saat anak umur X bisa dinikahkan.
+PROTECT_LABELS = {
+    1.0: "Tanpa pembatasan",
+    2.0: "Boleh dengan izin orang tua / hukum adat",
+    3.0: "Hanya dengan persetujuan pengadilan / kehamilan",
+    5.0: "Dilarang secara hukum",
+}
+
+# legal_diff_leg / legal_diff_pc: granular gender disparity.
+LEGAL_DIFF_LABELS = {
+    1.0: "Tanpa usia min. khusus perempuan",
+    2.0: "Perempuan 3 tahun lebih muda",
+    3.0: "Perempuan 1-2 tahun lebih muda",
+    5.0: "Tanpa perbedaan",
+}
+
 # Kolom yang dipertahankan untuk dashboard (lean tapi lengkap).
+# Diperluas untuk mendukung viz Tangga Umur, Heatmap Erosi, dan Dumbbell Gender.
 KEEP_COLUMNS = [
     "country", "iso2", "iso3", "region", "wb_econ",
-    "minage_fem_loop", "minage_mal_loop",
-    "minage_fem_leg", "minage_mal_leg",
-    "minage_fem_any", "minage_mal_any",
+    # Usia min — 5 layer per gender (leg / pc / crlaw / loop / any)
+    "minage_fem_leg",   "minage_mal_leg",
+    "minage_fem_pc",    "minage_mal_pc",
+    "minage_fem_crlaw", "minage_mal_crlaw",
+    "minage_fem_loop",  "minage_mal_loop",
+    "minage_fem_any",   "minage_mal_any",
+    # Ringkasan composite
     "loop_summ",
+    # Loophole exceptions
     "except_pc", "except_preg", "except_crlaw",
+    # protect_girl_* / protect_boy_* — keadaan per usia (untuk Tangga Umur)
+    "protect_girl_13", "protect_girl_15", "protect_girl_17",
+    "protect_boy_13",  "protect_boy_15",  "protect_boy_17",
+    # Gender disparity granular
+    "legal_diff_leg", "legal_diff_pc",
 ]
 
 
@@ -77,6 +104,12 @@ def build() -> pd.DataFrame:
     df["loop_summ_label"] = df["loop_summ"].map(LOOP_SUMM_LABELS)
     df["minage_fem_loop_label"] = df["minage_fem_loop"].map(MINAGE_LABELS)
     df["minage_mal_loop_label"] = df["minage_mal_loop"].map(MINAGE_LABELS)
+    # Label readable untuk kolom baru
+    for age in (13, 15, 17):
+        df[f"protect_girl_{age}_label"] = df[f"protect_girl_{age}"].map(PROTECT_LABELS)
+        df[f"protect_boy_{age}_label"]  = df[f"protect_boy_{age}"].map(PROTECT_LABELS)
+    df["legal_diff_leg_label"] = df["legal_diff_leg"].map(LEGAL_DIFF_LABELS)
+    df["legal_diff_pc_label"]  = df["legal_diff_pc"].map(LEGAL_DIFF_LABELS)
 
     # ── Derivasi: ada celah hukum (loop < legal). Verified vs CSV tim (55/50).
     df["has_loophole_fem"] = df["minage_fem_loop"] < df["minage_fem_leg"]
