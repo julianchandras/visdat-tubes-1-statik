@@ -8,9 +8,9 @@ from __future__ import annotations
 # ── Palet loop_summ (severity perlindungan anak) ──
 # Order kebaikan: 5 (terbaik) → 3 → 2 → 1 (terburuk) → 9 (ambigu).
 LOOP_SUMM_COLORS = {
-    1.0: "#A50F15",   # worst: kesenjangan + ≤13 tahun
-    2.0: "#DE2D26",   # kesenjangan DAN 14-17
-    3.0: "#FCAE91",   # kesenjangan ATAU 14-17 (salmon)
+    1.0: "#980400",   # worst: kesenjangan + ≤13 tahun (merah paling gelap)
+    2.0: "#FF0700",   # kesenjangan DAN 14-17 (merah jenuh)
+    3.0: "#FF6761",   # kesenjangan ATAU 14-17 (merah-pink terang)
     5.0: "#76B900",   # kesetaraan + ≥18 (hijau)
     9.0: "#FFD60A",   # unknown (kuning gold)
 }

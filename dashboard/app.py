@@ -76,6 +76,40 @@ def render_header(fdf):
 
 
 # ────────────────────────────────────────────────────────────
+# Panel detail negara (klik peta + selectbox fallback)
+# ────────────────────────────────────────────────────────────
+def render_country_detail(detail: dict | None) -> None:
+    if not detail:
+        st.info("Klik salah satu negara di peta, atau pilih dari dropdown di atas, "
+                "untuk melihat detail hukum pernikahannya.")
+        return
+    st.markdown(f"### {detail['country']}  ·  `{detail['iso3']}`")
+    st.markdown(
+        f"**Region:** {detail['region']}  \n"
+        f"**Pendapatan:** {detail['income'] or '—'}  \n"
+        f"**Perlindungan:** {detail['perlindungan'] or '—'}"
+    )
+    st.markdown("---")
+    st.markdown(
+        f"**Usia minimum nikah (dengan loophole):**  \n"
+        f"• Perempuan: {detail['minage_fem'] or '—'}  \n"
+        f"• Laki-laki: {detail['minage_mal'] or '—'}"
+    )
+    flags = []
+    if detail["has_loophole_fem"]:
+        flags.append("⚠️ Ada celah hukum untuk perempuan")
+    if detail["has_loophole_mal"]:
+        flags.append("⚠️ Ada celah hukum untuk laki-laki")
+    if detail["has_gender_gap"]:
+        flags.append("⚠️ Ada kesenjangan usia antar gender")
+    if flags:
+        for f in flags:
+            st.markdown(f)
+    else:
+        st.markdown("✅ Tidak ada celah hukum maupun kesenjangan gender.")
+
+
+# ────────────────────────────────────────────────────────────
 # Main
 # ────────────────────────────────────────────────────────────
 regions, incomes, severities = render_sidebar(df)
@@ -88,13 +122,61 @@ if fdf.empty:
     st.warning("Tidak ada negara yang cocok dengan filter. Longgarkan filter di sidebar.")
     st.stop()
 
-PLOTLY_CFG = {"displayModeBar": True, "scrollZoom": True,
-              "modeBarButtonsToRemove": ["select2d", "lasso2d"]}
+# Config Plotly:
+# - Peta: zoom & pan diaktifkan (tapi dibatasi via geo bounds di chart-nya)
+# - Non-peta: mode bar off, scrollZoom off — diagram lain tak perlu di-zoom.
+MAP_CFG = {"displayModeBar": True, "scrollZoom": True,
+           "modeBarButtonsToRemove": ["select2d", "lasso2d", "autoScale2d"]}
+STATIC_CFG = {"displayModeBar": False, "scrollZoom": False, "staticPlot": False}
 
-# ── Section 1: Peta choropleth (hero) ──
+# ── Section 1+4a: Peta (hero) + Donut komposisi side-by-side ──
 st.subheader("Peta Perlindungan Anak dari Pernikahan Dini")
-st.caption("Arahkan kursor untuk detail negara; scroll/drag untuk zoom & geser.")
-st.plotly_chart(map_choropleth.render(fdf), width="stretch", config=PLOTLY_CFG)
+st.caption("Arahkan kursor untuk detail; klik negara untuk panel detail; "
+           "scroll/drag untuk zoom & geser peta.")
+
+map_col, donut_col = st.columns([2, 1])
+with map_col:
+    map_event = st.plotly_chart(
+        map_choropleth.render(df, selected_iso3=fdf["iso3"].tolist()),
+        width="stretch", config=MAP_CFG,
+        on_select="rerun", selection_mode=["points"], key="map",
+    )
+with donut_col:
+    st.markdown("**Komposisi (negara terfilter)**")
+    st.plotly_chart(composition.render(fdf), width="stretch", config=STATIC_CFG)
+
+# Panel detail negara — di bawah peta, full-width
+st.markdown("#### Detail Negara")
+sel_col, info_col = st.columns([1, 3])
+with sel_col:
+    country_names = sorted(df["country"].dropna().unique().tolist())
+    # Tentukan default: kalau ada klik peta, pakai iso3 klik; else None.
+    clicked_iso3 = None
+    try:
+        pts = (map_event.get("selection", {}) or {}).get("points", [])
+        if pts:
+            clicked_iso3 = pts[0].get("location")
+    except (AttributeError, TypeError):
+        pass
+    default_name = None
+    if clicked_iso3:
+        match = df[df["iso3"] == clicked_iso3]
+        if not match.empty:
+            default_name = match.iloc[0]["country"]
+    picked_name = st.selectbox(
+        "Lihat detail negara",
+        options=["(Pilih atau klik peta)"] + country_names,
+        index=(country_names.index(default_name) + 1) if default_name else 0,
+        key="country_picker",
+    )
+with info_col:
+    detail = None
+    if picked_name and picked_name != "(Pilih atau klik peta)":
+        iso3 = df.loc[df["country"] == picked_name, "iso3"].iloc[0]
+        detail = datalib.country_detail(df, iso3)
+    elif clicked_iso3:
+        detail = datalib.country_detail(df, clicked_iso3)
+    render_country_detail(detail)
 
 st.divider()
 
@@ -103,11 +185,11 @@ col_left, col_right = st.columns(2)
 with col_left:
     st.subheader("Kesenjangan Gender menurut Pendapatan")
     st.caption("% negara dengan usia minimum pernikahan ≥ 18 tahun.")
-    st.plotly_chart(gender_income.render(fdf), width="stretch", config=PLOTLY_CFG)
+    st.plotly_chart(gender_income.render(fdf), width="stretch", config=STATIC_CFG)
 with col_right:
     st.subheader("Celah Hukum Pernikahan Anak")
     st.caption("Jumlah negara per tipe celah hukum, dipecah tingkat pendapatan.")
-    st.plotly_chart(loopholes.render(fdf), width="stretch", config=PLOTLY_CFG)
+    st.plotly_chart(loopholes.render(fdf), width="stretch", config=STATIC_CFG)
 
 st.divider()
 
@@ -125,32 +207,27 @@ region_arg = None if region_opt == "Semua region" else region_opt
 with ts_col1:
     st.plotly_chart(
         timeseries.render(fdf, year_range=year_range, region=region_arg),
-        width="stretch", config=PLOTLY_CFG,
+        width="stretch", config=STATIC_CFG,
     )
 
 st.divider()
 
-# ── Section 4: Komposisi (donut) + tabel data ──
-comp_col, tbl_col = st.columns([1, 1.4])
-with comp_col:
-    st.subheader("Komposisi Tingkat Perlindungan")
-    st.plotly_chart(composition.render(fdf), width="stretch", config=PLOTLY_CFG)
-with tbl_col:
-    st.subheader("Data Negara Terpilih")
-    table_cols = ["country", "region", "wb_econ_label", "loop_summ_label",
-                  "minage_fem_loop_label", "minage_mal_loop_label"]
-    show = fdf[table_cols].rename(columns={
-        "country": "Negara", "region": "Region", "wb_econ_label": "Pendapatan",
-        "loop_summ_label": "Perlindungan",
-        "minage_fem_loop_label": "Usia min. P", "minage_mal_loop_label": "Usia min. L",
-    })
-    st.dataframe(show, width="stretch", height=320, hide_index=True)
-    st.download_button(
-        "⬇️ Unduh data terpilih (CSV)",
-        data=fdf.to_csv(index=False).encode("utf-8"),
-        file_name="hukum-pernikahan-anak-terpilih.csv",
-        mime="text/csv",
-    )
+# ── Section 4b: Tabel data ──
+st.subheader("Data Negara Terpilih")
+table_cols = ["country", "region", "wb_econ_label", "loop_summ_label",
+              "minage_fem_loop_label", "minage_mal_loop_label"]
+show = fdf[table_cols].rename(columns={
+    "country": "Negara", "region": "Region", "wb_econ_label": "Pendapatan",
+    "loop_summ_label": "Perlindungan",
+    "minage_fem_loop_label": "Usia min. P", "minage_mal_loop_label": "Usia min. L",
+})
+st.dataframe(show, width="stretch", height=320, hide_index=True)
+st.download_button(
+    "⬇️ Unduh data terpilih (CSV)",
+    data=fdf.to_csv(index=False).encode("utf-8"),
+    file_name="hukum-pernikahan-anak-terpilih.csv",
+    mime="text/csv",
+)
 
 # ── Footer ──
 st.divider()

@@ -55,6 +55,26 @@ def kpi_metrics(df: pd.DataFrame) -> dict[str, int]:
     }
 
 
+def country_detail(df: pd.DataFrame, iso3: str) -> dict | None:
+    """Ambil ringkasan satu negara untuk panel detail (klik di peta)."""
+    row = df[df["iso3"] == iso3]
+    if row.empty:
+        return None
+    r = row.iloc[0]
+    return {
+        "country": r["country"],
+        "iso3": r["iso3"],
+        "region": r["region"],
+        "income": r.get("wb_econ_label"),
+        "perlindungan": r.get("loop_summ_label"),
+        "minage_fem": r.get("minage_fem_loop_label"),
+        "minage_mal": r.get("minage_mal_loop_label"),
+        "has_loophole_fem": bool(r.get("has_loophole_fem", False)),
+        "has_loophole_mal": bool(r.get("has_loophole_mal", False)),
+        "has_gender_gap": bool(r.get("has_gender_gap", False)),
+    }
+
+
 def region_timeseries(df: pd.DataFrame, region: str | None = None) -> pd.DataFrame:
     """% negara dengan usia min ≥18 (izin ortu) per tahun, F & M.
 
