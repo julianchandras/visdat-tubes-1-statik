@@ -208,6 +208,10 @@ if detail_col is not None:
         render_country_detail(detail)
 
 with donut_col:
+    # Spacer untuk vertically center pie (240px) terhadap peta (520px).
+    # (520 - 240) / 2 ≈ 140px. Streamlit kolom default mengisi dari atas;
+    # tanpa spacer pie menggantung di top, banyak whitespace di bawahnya.
+    st.markdown("<div style='height: 140px'></div>", unsafe_allow_html=True)
     pie_event = st.plotly_chart(
         composition.render(df, severity_filter=severities),
         width="stretch", config=STATIC_CFG,

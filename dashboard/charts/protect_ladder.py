@@ -55,18 +55,39 @@ def render(fdf) -> go.Figure:
     # y axis pakai Perempuan di ATAS, Laki-laki di BAWAH (urutan visual: P-L).
     y_categories = ["Laki-laki", "Perempuan"]   # Plotly horizontal bar bawah→atas
 
+    # Kumpulkan annotations untuk angka outside (di atas bar P, di bawah bar L).
+    # Pendekatan ini menggantikan inline text — segment kecil (mis. 5 negara) yang
+    # sebelumnya tertelan border antar segment sekarang terbaca jelas.
+    annotations_data = []   # tuples (col_i, glabel, mid_x, n, color)
+
     for col_i, age in enumerate(AGES, start=1):
+        # Counts per (gender, kategori) untuk subplot ini, plus cumulative
+        # midpoints utk anchor annotation.
+        gender_counts: dict[str, dict[float, int]] = {}
+        for gkey, glabel in GENDERS:
+            column = f"protect_{gkey}_{age}"
+            gender_counts[glabel] = {
+                code: int((fdf[column] == code).sum())
+                for code in T.PROTECT_ORDER
+            }
+            # Hitung midpoint kumulatif (untuk anchor angka)
+            cum = 0
+            for code in T.PROTECT_ORDER:
+                n = gender_counts[glabel][code]
+                if n > 0:
+                    annotations_data.append(
+                        (col_i, glabel, cum + n / 2, n, T.PROTECT_COLORS[code])
+                    )
+                cum += n
+
         for code in T.PROTECT_ORDER:
-            xs, ys, hover_lines = [], [], []
-            for gkey, glabel in GENDERS:
-                column = f"protect_{gkey}_{age}"
-                n = int((fdf[column] == code).sum())
-                xs.append(n)
-                ys.append(glabel)
-                hover_lines.append(
-                    f"<b>{glabel}, umur {age} thn</b><br>"
-                    f"{T.PROTECT_LABELS[code]}: {n} negara"
-                )
+            xs = [gender_counts[glabel][code] for _, glabel in GENDERS]
+            ys = [glabel for _, glabel in GENDERS]
+            hover_lines = [
+                f"<b>{glabel}, umur {age} thn</b><br>"
+                f"{T.PROTECT_LABELS[code]}: {n} negara"
+                for (_, glabel), n in zip(GENDERS, xs)
+            ]
             show = code not in legend_shown
             legend_shown.add(code)
             fig.add_trace(
@@ -78,28 +99,38 @@ def render(fdf) -> go.Figure:
                     marker_color=T.PROTECT_COLORS[code],
                     legendgroup=f"prot_{code}",
                     showlegend=show,
-                    text=[str(n) if n > 0 else "" for n in xs],
-                    textposition="inside",
-                    insidetextanchor="middle",
-                    textfont=dict(color="white", size=11),
                     hovertext=hover_lines,
                     hovertemplate="%{hovertext}<extra></extra>",
                 ),
                 row=1, col=col_i,
             )
 
+    # Tambah annotations outside: P di ATAS bar (yshift +14px),
+    # L di BAWAH bar (yshift -14px). Hindari menumpuk antar dua bar.
+    for col_i, glabel, mid_x, n, color in annotations_data:
+        yshift = 14 if glabel == "Perempuan" else -14
+        fig.add_annotation(
+            xref=f"x{col_i}", yref=f"y{col_i}",
+            x=mid_x, y=glabel,
+            yshift=yshift,
+            text=f"<b>{n}</b>",
+            showarrow=False,
+            font=dict(size=10, color=color, family=T.FONT_SANS),
+            xanchor="center",
+        )
+
     layout = {k: v for k, v in T.PLOTLY_LAYOUT.items() if k != "colorway"}
     fig.update_layout(
         **layout,
         barmode="stack",
-        height=260,
+        height=320,   # naik dari 260 supaya ada ruang untuk annotations atas+bawah
         showlegend=True,
         legend=dict(
-            orientation="h", yanchor="bottom", y=-0.45,
+            orientation="h", yanchor="bottom", y=-0.40,
             xanchor="center", x=0.5, font=dict(size=10),
             traceorder="normal",
         ),
-        bargap=0.30,
+        bargap=0.55,   # bargap besar = ruang vertikal lebih untuk annotations
     )
     fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False)
     fig.update_yaxes(
