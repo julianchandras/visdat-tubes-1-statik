@@ -97,7 +97,7 @@ def render_sidebar_downloads(df, fdf):
     st.sidebar.divider()
     st.sidebar.markdown("**Unduh data**")
     st.sidebar.download_button(
-        f"⬇️ Data lengkap ({len(df)} negara)",
+        f"Data lengkap ({len(df)} negara)",
         data=df.to_csv(index=False).encode("utf-8"),
         file_name="hukum-pernikahan-anak-2023-lengkap.csv",
         mime="text/csv",
@@ -105,7 +105,7 @@ def render_sidebar_downloads(df, fdf):
         use_container_width=True,
     )
     st.sidebar.download_button(
-        f"⬇️ Data sesuai filter ({len(fdf)} negara)",
+        f"Data sesuai filter ({len(fdf)} negara)",
         data=fdf.to_csv(index=False).encode("utf-8"),
         file_name="hukum-pernikahan-anak-2023-terfilter.csv",
         mime="text/csv",
@@ -164,9 +164,8 @@ def render_country_detail(detail: dict | None) -> None:
             unsafe_allow_html=True,
         )
     with hdr_right:
-        # "»" (double right chevron) — kesan "geser ke kanan/tutup",
-        # lebih intuitif drpd "✕" untuk panel yg konseptual slide-out.
-        if st.button("»", key="close_detail", help="Tutup panel detail"):
+        # Silang "✕" — simbol close standar yang universal dikenal.
+        if st.button("✕", key="close_detail", help="Tutup panel detail"):
             st.session_state["pending_close_detail"] = True
             st.rerun()
 
@@ -245,7 +244,7 @@ options = [PLACEHOLDER] + country_names
 current_pick = st.session_state.get(COUNTRY_KEY, PLACEHOLDER)
 current_idx = options.index(current_pick) if current_pick in options else 0
 picked_name = st.selectbox(
-    "🔍 Cari negara untuk lihat detail",
+    "Cari negara untuk lihat detail",
     options=options,
     key=COUNTRY_KEY,
     index=current_idx,
@@ -393,16 +392,22 @@ with bot_right:
         "% negara dengan usia min. ≥ 18 (dengan izin orang tua). Geser rentang "
         "tahun untuk fokus periode tertentu."
     )
-    # Slider rentang tahun — bungkus sub-kolom supaya tidak terlalu lebar
-    # (full-width di bot_right setengah layar terasa "lucu" / janggal).
-    sl_col, _ = st.columns([3, 2])
-    with sl_col:
-        year_range = st.slider(
-            "Rentang tahun", min_value=1995, max_value=2023, value=(1995, 2023),
-            label_visibility="collapsed",
+    # Filter tahun: 2 selectbox terpisah (start & end), end constrained ≥ start
+    # supaya tidak ada kombinasi invalid. Lebih presisi drpd slider dual-handle.
+    YEARS = list(range(1995, 2024))
+    y_col1, y_col2 = st.columns(2)
+    with y_col1:
+        start_year = st.selectbox(
+            "Tahun mulai", options=YEARS, index=0, key="ts_start_year",
+        )
+    with y_col2:
+        end_options = [y for y in YEARS if y >= start_year]
+        end_year = st.selectbox(
+            "Tahun akhir", options=end_options,
+            index=len(end_options) - 1, key="ts_end_year",
         )
     st.plotly_chart(
-        timeseries.render(fdf, year_range=year_range),
+        timeseries.render(fdf, year_range=(start_year, end_year)),
         width="stretch", config=STATIC_CFG,
     )
 

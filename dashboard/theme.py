@@ -36,6 +36,24 @@ LOOP_SUMM_ORDER = [5.0, 3.0, 2.0, 1.0, 9.0]
 NO_DATA_COLOR = "#9A9A9A"   # medium grey — kontras lebih kuat dari 'di luar filter'
 LABEL_NO_DATA = "Tanpa data"
 
+# ── Variant DIM (warna asli + alpha rendah) untuk mode focus 1 negara ──
+# Mode focus: negara non-focus DIBURAMKAN dgn warna kategori asli (bukan gray
+# polos seperti mode filter). User tetap dapat konteks loop_summ neighbours.
+DIM_ALPHA = 0.30
+
+
+def _hex_to_rgba(hex_color: str, alpha: float) -> str:
+    h = hex_color.lstrip("#")
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    return f"rgba({r},{g},{b},{alpha:.2f})"
+
+
+LOOP_SUMM_COLORS_DIM = {
+    code: _hex_to_rgba(color, DIM_ALPHA)
+    for code, color in LOOP_SUMM_COLORS.items()
+}
+NO_DATA_COLOR_DIM = _hex_to_rgba(NO_DATA_COLOR, DIM_ALPHA)
+
 # Bounding box per region untuk auto-zoom (lon_min, lon_max, lat_min, lat_max).
 # Diset agar negara di tiap region masuk frame penuh, sedikit padding di tepi.
 REGION_BBOX = {
