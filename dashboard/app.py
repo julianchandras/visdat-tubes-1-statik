@@ -49,16 +49,9 @@ st.markdown(
 # Pola: handler menulis ke session_state[<flag>], di awal run kita pop &
 # mutasi widget keys, lalu widget akan terbaca dgn value baru di run ini.
 # ────────────────────────────────────────────────────────────
-SEV_KEY = "sev_widget"          # multiselect label tingkat perlindungan
-COUNTRY_KEY = "country_picker"  # selectbox pemilihan negara
-
-# Klik slice pie pada run sebelumnya → set filter perlindungan ke kategori itu.
-if "pending_pie_label" in st.session_state:
-    lbl = st.session_state.pop("pending_pie_label")
-    if lbl is None:
-        st.session_state[SEV_KEY] = []
-    else:
-        st.session_state[SEV_KEY] = [lbl]
+SEV_KEY = "sev_widget"           # multiselect label tingkat perlindungan
+COUNTRY_KEY = "country_picker"   # selectbox pemilihan negara
+PLACEHOLDER = "— Pilih atau ketik nama negara —"  # def di atas; dipakai handler + selectbox
 
 # Klik negara di peta pada run sebelumnya → set country picker.
 if "pending_map_iso3" in st.session_state:
@@ -68,16 +61,18 @@ if "pending_map_iso3" in st.session_state:
         if not match.empty:
             st.session_state[COUNTRY_KEY] = match.iloc[0]
 
-# Klik tombol close panel detail → clear country picker (kembali ke placeholder).
+# Klik tombol close panel detail → reset country picker SECARA EKSPLISIT ke
+# PLACEHOLDER (bukan del session_state) supaya widget benar2 reset visual.
+# Approach del kadang gagal sync di Streamlit Cloud karena widget retention.
 if st.session_state.pop("pending_close_detail", False):
-    if COUNTRY_KEY in st.session_state:
-        del st.session_state[COUNTRY_KEY]
+    st.session_state[COUNTRY_KEY] = PLACEHOLDER
 
 
 # ────────────────────────────────────────────────────────────
-# Sidebar — filter global
+# Sidebar — filter global (atas) + tombol unduh data (bawah)
 # ────────────────────────────────────────────────────────────
-def render_sidebar(df):
+def render_sidebar_filters(df):
+    """Render bagian FILTER di sidebar. Return (regions, incomes, severities)."""
     st.sidebar.header("Filter")
     regions = st.sidebar.multiselect(
         "Region", options=T.REGION_ORDER, default=[],
@@ -91,16 +86,37 @@ def render_sidebar(df):
     sev_picked = st.sidebar.multiselect(
         "Tingkat perlindungan", options=list(sev_label_to_code.keys()),
         key=SEV_KEY,
-        help="Bisa juga dipilih dengan klik slice pie chart komposisi.",
+        help="Filter berdasarkan ringkasan loophole (loop_summ).",
     )
     severities = [sev_label_to_code[s] for s in sev_picked]
+    return regions, incomes, severities
 
+
+def render_sidebar_downloads(df, fdf):
+    """Render bagian UNDUH DATA + caption sumber di bawah sidebar."""
+    st.sidebar.divider()
+    st.sidebar.markdown("**Unduh data**")
+    st.sidebar.download_button(
+        f"⬇️ Data lengkap ({len(df)} negara)",
+        data=df.to_csv(index=False).encode("utf-8"),
+        file_name="hukum-pernikahan-anak-2023-lengkap.csv",
+        mime="text/csv",
+        help="Dataset 193 negara hasil pembersihan.",
+        use_container_width=True,
+    )
+    st.sidebar.download_button(
+        f"⬇️ Data sesuai filter ({len(fdf)} negara)",
+        data=fdf.to_csv(index=False).encode("utf-8"),
+        file_name="hukum-pernikahan-anak-2023-terfilter.csv",
+        mime="text/csv",
+        help="Subset sesuai filter di atas.",
+        use_container_width=True,
+    )
     st.sidebar.divider()
     st.sidebar.caption(
         "Sumber: WORLD Policy Analysis Center, Child Marriage Laws 2023 "
         "(193 negara anggota PBB). Lisensi CC-BY-SA."
     )
-    return regions, incomes, severities
 
 
 # ────────────────────────────────────────────────────────────
@@ -194,8 +210,9 @@ def render_country_detail(detail: dict | None) -> None:
 # ────────────────────────────────────────────────────────────
 # Main
 # ────────────────────────────────────────────────────────────
-regions, incomes, severities = render_sidebar(df)
+regions, incomes, severities = render_sidebar_filters(df)
 fdf = datalib.filter_data(df, regions, incomes, severities)
+render_sidebar_downloads(df, fdf)   # tombol unduh di bawah filter (revisi tim)
 
 render_header(fdf)
 st.divider()
@@ -218,19 +235,20 @@ STATIC_CFG = {"displayModeBar": False, "scrollZoom": False, "staticPlot": False}
 st.subheader("Peta Perlindungan Anak dari Pernikahan Dini")
 st.caption(
     "Arahkan kursor untuk detail; klik negara atau cari di kotak pencarian "
-    "untuk membuka panel detail; scroll/drag untuk zoom & geser peta. "
-    "Klik slice di pie chart untuk memfilter tingkat perlindungan."
+    "untuk membuka panel detail; scroll/drag untuk zoom & geser peta."
 )
 
 country_names = sorted(df["country"].dropna().unique().tolist())
-PLACEHOLDER = "— Pilih atau ketik nama negara —"
-# Search/select negara (selectbox Streamlit otomatis searchable saat options >10).
+options = [PLACEHOLDER] + country_names
+# Simpel: index dihitung dari nilai session_state saat ini supaya reset
+# benar2 sinkron setelah pending_close_detail handler.
+current_pick = st.session_state.get(COUNTRY_KEY, PLACEHOLDER)
+current_idx = options.index(current_pick) if current_pick in options else 0
 picked_name = st.selectbox(
     "🔍 Cari negara untuk lihat detail",
-    options=[PLACEHOLDER] + country_names,
+    options=options,
     key=COUNTRY_KEY,
-    index=0 if st.session_state.get(COUNTRY_KEY, PLACEHOLDER) == PLACEHOLDER else None,
-    placeholder="Ketik untuk mencari…",
+    index=current_idx,
 )
 focus_iso3 = None
 detail = None
@@ -272,10 +290,12 @@ with donut_col:
     # (520 - 240) / 2 ≈ 140px. Streamlit kolom default mengisi dari atas;
     # tanpa spacer pie menggantung di top, banyak whitespace di bawahnya.
     st.markdown("<div style='height: 140px'></div>", unsafe_allow_html=True)
-    pie_event = st.plotly_chart(
+    # Pie chart DIBATALKAN sbg filter trigger (Streamlit Cloud Plotly Pie
+    # selection tidak reliable lintas versi). Hanya display + hover.
+    st.plotly_chart(
         composition.render(df, severity_filter=severities),
         width="stretch", config=STATIC_CFG,
-        on_select="rerun", selection_mode=["points"], key="pie",
+        key="pie",
     )
 
 # ── Shared legend (HTML) — di tengah, full-width di bawah row peta+pie ──
@@ -298,19 +318,6 @@ for code in T.LOOP_SUMM_ORDER:
 legend_html += _swatch(T.NO_DATA_COLOR, T.LABEL_NO_DATA)
 legend_html += '</div>'
 st.markdown(legend_html, unsafe_allow_html=True)
-
-# ── Handler event: pie click → schedule severities update untuk run berikutnya
-pie_pts = (pie_event.get("selection", {}) or {}).get("points", []) if pie_event else []
-if pie_pts:
-    clicked_label = pie_pts[0].get("label")
-    # Toggle: kalau slice sudah satu-satunya yang aktif, hapus filter; else SET.
-    current = st.session_state.get(SEV_KEY, [])
-    if clicked_label and clicked_label != T.LABEL_NO_DATA:
-        if current == [clicked_label]:
-            st.session_state["pending_pie_label"] = None
-        else:
-            st.session_state["pending_pie_label"] = clicked_label
-        st.rerun()
 
 # ── Handler event: peta click → schedule country picker update.
 # Klik bisa hit DUA jenis trace:
@@ -401,26 +408,7 @@ with bot_right:
 
 st.divider()
 
-# ── Footer: 2 tombol unduh + sumber ──
-dl_col1, dl_col2, _ = st.columns([1.2, 1.2, 1])
-with dl_col1:
-    st.download_button(
-        f"⬇️ Unduh data lengkap ({len(df)} negara)",
-        data=df.to_csv(index=False).encode("utf-8"),
-        file_name="hukum-pernikahan-anak-2023-lengkap.csv",
-        mime="text/csv",
-        help="Dataset 193 negara hasil pembersihan, siap dipakai ulang.",
-    )
-with dl_col2:
-    st.download_button(
-        f"⬇️ Unduh data sesuai filter ({len(fdf)} negara)",
-        data=fdf.to_csv(index=False).encode("utf-8"),
-        file_name="hukum-pernikahan-anak-2023-terfilter.csv",
-        mime="text/csv",
-        help="Subset sesuai filter di sidebar.",
-    )
-
-st.divider()
+# ── Footer caption (tombol unduh sudah dipindah ke sidebar) ──
 st.caption(
     "Dataset: WORLD Policy Analysis Center, Child Marriage Laws 2023 · "
     "DOI: 10.25828/v8s6-jz31 · Lisensi CC-BY-SA. "

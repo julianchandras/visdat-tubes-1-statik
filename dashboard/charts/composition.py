@@ -1,16 +1,13 @@
-"""Section 4a — Komposisi tingkat perlindungan (donut).
+"""Section pie — Komposisi tingkat perlindungan (donut).
 
-Donut SELALU menampilkan komposisi UTUH 193 negara (tidak ikut filter). Saat
-filter tingkat perlindungan aktif, slice yang ada di filter tetap opak; slice
-lain diredupkan (opacity rendah). Saat tidak ada filter perlindungan, semua
-slice opak penuh.
+SELALU menampilkan komposisi UTUH 193 negara (tidak ikut filter). Saat filter
+tingkat perlindungan aktif, slice yang ada di filter tetap opak; slice lain
+diredupkan (opacity rendah). Angka pada slice juga ikut redup → visual fokus
+pindah ke warna slice (sesuai keluhan tim ttg ketidakterbacaan angka di slice
+salmon saat di-highlight).
 
-Revisi tim:
-- Pie chart utuh full data (bukan subset terfilter).
-- Filter perlindungan → redupkan kategori non-filter, jangan hilangkan.
-- Tanpa judul (st.markdown sudah menanganinya).
-- Tanpa legend internal (shared dengan legenda peta).
-- Klik slice → emit event ke app (handled via on_select di app.py).
+Catatan: fitur klik slice → set filter SUDAH DIBATALKAN (Streamlit Cloud Plotly
+Pie selection tidak reliable lintas versi). on_select tidak dipakai lagi.
 """
 from __future__ import annotations
 
@@ -19,6 +16,8 @@ import plotly.graph_objects as go
 import theme as T
 
 DIM_OPACITY = 0.25
+HIGHLIGHTED_TEXT_COLOR = "#2D3142"   # dark, kontras tinggi
+DIMMED_TEXT_COLOR = "#C9CACC"        # sangat pudar, fade dgn slice yg dim
 
 
 def render(full_df, severity_filter: list[float] | None = None) -> go.Figure:
@@ -26,10 +25,10 @@ def render(full_df, severity_filter: list[float] | None = None) -> go.Figure:
 
     Parameters
     ----------
-    full_df : DataFrame 193 negara (SELALU; tidak boleh subset terfilter).
+    full_df : DataFrame 193 negara (SELALU, tidak ikut filter).
     severity_filter : list kode loop_summ yang aktif di filter perlindungan.
-        Bila empty/None → semua slice opak.
-        Bila ada isi → slice dalam filter opak, sisanya redup.
+        Bila empty/None → semua slice opak, semua angka warna kontras.
+        Bila ada isi → slice/angka dalam filter opak penuh, sisanya redup.
     """
     active = set(severity_filter or [])
     has_filter = len(active) > 0
@@ -51,8 +50,6 @@ def render(full_df, severity_filter: list[float] | None = None) -> go.Figure:
         opacities.append(1.0 if not has_filter else DIM_OPACITY)
         codes.append(None)
 
-    # Plotly Pie marker_colors tidak terima alpha per-slice langsung. Bake
-    # opacity ke hex rgba untuk setiap slice (lebih reliable lintas versi).
     def _hex_to_rgba(hex_color: str, alpha: float) -> str:
         h = hex_color.lstrip("#")
         r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
@@ -60,23 +57,25 @@ def render(full_df, severity_filter: list[float] | None = None) -> go.Figure:
 
     rgba_colors = [_hex_to_rgba(c, a) for c, a in zip(colors, opacities)]
 
+    # Per-slice text dgn warna inline HTML: highlighted = dark bold,
+    # dimmed = sangat pudar. Plotly Pie textinfo='text' menerima HTML span.
+    texts = []
+    for code, v in zip(codes, values):
+        is_active = (not has_filter) or (code in active)
+        color = HIGHLIGHTED_TEXT_COLOR if is_active else DIMMED_TEXT_COLOR
+        texts.append(f"<b style='color:{color}'>{v}</b>")
+
     fig = go.Figure(go.Pie(
         labels=labels, values=values, hole=0.55,
         marker=dict(colors=rgba_colors, line=dict(color="white", width=1.5)),
         sort=False, direction="clockwise",
-        textinfo="value", textfont=dict(size=12),
-        hovertemplate=(
-            "<b>%{label}</b><br>%{value} negara (%{percent})"
-            "<br><i>Klik untuk memfilter</i><extra></extra>"
-        ),
-        # customdata = kode loop_summ untuk handler klik di app.py.
-        customdata=codes,
+        text=texts, textinfo="text", textfont=dict(size=12),
+        hovertemplate="<b>%{label}</b><br>%{value} negara (%{percent})<extra></extra>",
     ))
     layout = {k: v for k, v in T.PLOTLY_LAYOUT.items() if k != "colorway"}
     fig.update_layout(
         **layout,
         height=240,
         showlegend=False,    # legenda di-share lewat HTML legend di app.py
-        clickmode="event+select",
     )
     return T.lock_static(fig)

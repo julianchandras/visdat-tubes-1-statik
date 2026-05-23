@@ -94,11 +94,17 @@ def render(fdf) -> go.Figure:
                 f"{CAT_LABELS[cat_a]} → {CAT_LABELS[cat_b]}: {int(row['n'])} negara"
             )
 
+    # Sankey domain shrink ke [0.06, 0.94] supaya node leftmost (Legal) &
+    # rightmost (Any) tidak menempel tepi. Plotly Sankey merender label node
+    # DI LUAR node (kiri utk leftmost col, kanan utk rightmost) — kalau node
+    # mepet tepi, label "Legal"/"Any" ter-clip oleh margin.
+    SANKEY_X_START, SANKEY_X_END = 0.06, 0.94
+
     fig = go.Figure(go.Sankey(
         arrangement="snap",
+        domain=dict(x=[SANKEY_X_START, SANKEY_X_END]),
         # textfont eksplisit: warna dark + family Arial supaya label node tidak
-        # tampak "hollow" (default Plotly Sankey font kadang tipis/transparan
-        # tergantung versi & theme). Size 13 + dark navy = jelas terbaca.
+        # tampak "hollow".
         textfont=dict(color=T.COLOR_BODY, size=13, family="Arial, sans-serif"),
         node=dict(
             label=node_labels,
@@ -117,10 +123,13 @@ def render(fdf) -> go.Figure:
         valueformat=".0f",
     ))
 
-    # Anotasi header layer di atas masing-masing kolom Sankey.
+    # Anotasi header layer DI ATAS masing-masing kolom Sankey. Posisi x
+    # diselaraskan dengan domain Sankey (bukan paper 0..1) supaya label
+    # tepat di atas node-nya.
     annotations = []
     for li, (_, layer_label) in enumerate(LAYERS):
-        x_pos = li / (len(LAYERS) - 1)
+        # Map li=[0,1,2] → x dalam range SANKEY_X_START..END
+        x_pos = SANKEY_X_START + (SANKEY_X_END - SANKEY_X_START) * li / (len(LAYERS) - 1)
         annotations.append(dict(
             x=x_pos, y=1.08, xref="paper", yref="paper",
             text=f"<b>{layer_label.replace(chr(10), '<br>')}</b>",
@@ -135,6 +144,8 @@ def render(fdf) -> go.Figure:
         **layout,
         height=460,
         annotations=annotations,
-        margin=dict(l=10, r=10, t=60, b=20),
+        # Margin l/r besar supaya label node leftmost/rightmost (text di luar
+        # node) ada ruang menampung (tidak ter-clip oleh tepi figure).
+        margin=dict(l=90, r=90, t=60, b=20),
     )
     return T.lock_static(fig)
