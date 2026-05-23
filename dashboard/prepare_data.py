@@ -121,6 +121,24 @@ def build() -> pd.DataFrame:
     df["gender_gap_loop"] = mal - fem
     df["has_gender_gap"] = df["minage_fem_loop"] != df["minage_mal_loop"]
 
+    # ── Join centroid lon/lat dari Natural Earth 50m shapefile.
+    # Build-time saja (butuh geopandas, sama seperti xlrd). Runtime app hanya
+    # membaca kolom lon/lat dari CSV → tidak perlu geopandas di prod.
+    import geopandas as gpd
+    ne_path = ROOT / "poster" / "geo" / "ne_50m_admin_0_countries.shp"
+    gdf = gpd.read_file(ne_path)[["ADM0_A3", "geometry"]]
+    # Patch South Sudan ISO mismatch (sama seperti poster Tubes 1)
+    gdf.loc[gdf["ADM0_A3"] == "SDS", "ADM0_A3"] = "SSD"
+    # Centroid pakai representative_point() (selalu di dalam poligon, beda
+    # dengan .centroid yang bisa di laut untuk negara cekung mis. Norwegia).
+    cent = gdf.copy()
+    cent["lon"] = cent["geometry"].representative_point().x
+    cent["lat"] = cent["geometry"].representative_point().y
+    df = df.merge(
+        cent[["ADM0_A3", "lon", "lat"]].rename(columns={"ADM0_A3": "iso3"}),
+        on="iso3", how="left",
+    )
+
     return df
 
 

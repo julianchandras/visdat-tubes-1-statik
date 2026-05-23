@@ -8,9 +8,9 @@ from __future__ import annotations
 # ── Palet loop_summ (severity perlindungan anak) ──
 # Order kebaikan: 5 (terbaik) → 3 → 2 → 1 (terburuk) → 9 (ambigu).
 LOOP_SUMM_COLORS = {
-    1.0: "#980400",   # worst: kesenjangan + ≤13 tahun (merah paling gelap)
+    1.0: "#A70400",   # worst: kesenjangan + ≤13 tahun (merah paling gelap)
     2.0: "#FF0700",   # kesenjangan DAN 14-17 (merah jenuh)
-    3.0: "#FF6761",   # kesenjangan ATAU 14-17 (merah-pink terang)
+    3.0: "#FFA6A4",   # kesenjangan ATAU 14-17 (merah-pink pucat)
     5.0: "#76B900",   # kesetaraan + ≥18 (hijau)
     9.0: "#FFD60A",   # unknown (kuning gold)
 }
@@ -33,8 +33,19 @@ LOOP_SUMM_SHORT = {
 # Urutan tampil (legend, sumbu kategori): terbaik → terburuk → ambigu.
 LOOP_SUMM_ORDER = [5.0, 3.0, 2.0, 1.0, 9.0]
 
-NO_DATA_COLOR = "#D9D9D9"
+NO_DATA_COLOR = "#9A9A9A"   # medium grey — kontras lebih kuat dari 'di luar filter'
 LABEL_NO_DATA = "Tanpa data"
+
+# Bounding box per region untuk auto-zoom (lon_min, lon_max, lat_min, lat_max).
+# Diset agar negara di tiap region masuk frame penuh, sedikit padding di tepi.
+REGION_BBOX = {
+    "Europe & Central Asia":     (-25, 180,  35,  82),  # incl. Russia
+    "South Asia":                ( 60,  98,   5,  38),
+    "Middle East & North Africa":(-18,  65,  12,  42),
+    "Sub-Saharan Africa":        (-20,  52, -36,  20),
+    "Americas":                  (-170, -30, -56,  73),
+    "East Asia & Pacific":       ( 73, 185, -50,  55),
+}
 
 # ── Warna gender ──
 COLOR_FEMALE = "#C71E3A"

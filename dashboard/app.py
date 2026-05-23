@@ -26,27 +26,51 @@ st.set_page_config(
 
 df = datalib.load_data()
 
+# ────────────────────────────────────────────────────────────
+# State sync — proses event terjadwal SEBELUM widget di-render.
+# Pola: handler menulis ke session_state[<flag>], di awal run kita pop &
+# mutasi widget keys, lalu widget akan terbaca dgn value baru di run ini.
+# ────────────────────────────────────────────────────────────
+SEV_KEY = "sev_widget"          # multiselect label tingkat perlindungan
+COUNTRY_KEY = "country_picker"  # selectbox pemilihan negara
+
+# Klik slice pie pada run sebelumnya → set filter perlindungan ke kategori itu.
+if "pending_pie_label" in st.session_state:
+    lbl = st.session_state.pop("pending_pie_label")
+    if lbl is None:
+        st.session_state[SEV_KEY] = []
+    else:
+        st.session_state[SEV_KEY] = [lbl]
+
+# Klik negara di peta pada run sebelumnya → set country picker.
+if "pending_map_iso3" in st.session_state:
+    iso3 = st.session_state.pop("pending_map_iso3")
+    if iso3:
+        match = df.loc[df["iso3"] == iso3, "country"]
+        if not match.empty:
+            st.session_state[COUNTRY_KEY] = match.iloc[0]
+
 
 # ────────────────────────────────────────────────────────────
 # Sidebar — filter global
 # ────────────────────────────────────────────────────────────
 def render_sidebar(df):
     st.sidebar.header("Filter")
-
     regions = st.sidebar.multiselect(
         "Region", options=T.REGION_ORDER, default=[],
-        help="Kosong = semua region.",
+        help="Kosong = semua region. Pilih 1 region → peta otomatis zoom.",
     )
     incomes = st.sidebar.multiselect(
         "Tingkat pendapatan", options=T.INCOME_ORDER, default=[],
         help="Klasifikasi World Bank.",
     )
-    sev_labels = {T.LOOP_SUMM_LABELS[c]: c for c in T.LOOP_SUMM_ORDER}
+    sev_label_to_code = {T.LOOP_SUMM_LABELS[c]: c for c in T.LOOP_SUMM_ORDER}
     sev_picked = st.sidebar.multiselect(
-        "Tingkat perlindungan", options=list(sev_labels.keys()), default=[],
-        help="Ringkasan loophole (loop_summ).",
+        "Tingkat perlindungan", options=list(sev_label_to_code.keys()),
+        key=SEV_KEY,
+        help="Bisa juga dipilih dengan klik slice pie chart komposisi.",
     )
-    severities = [sev_labels[s] for s in sev_picked]
+    severities = [sev_label_to_code[s] for s in sev_picked]
 
     st.sidebar.divider()
     st.sidebar.caption(
@@ -66,23 +90,23 @@ def render_header(fdf):
         "(WORLD Policy Analysis Center, 2023). Gunakan filter di sisi kiri untuk "
         "menelusuri pola berdasarkan region, pendapatan, dan tingkat perlindungan."
     )
-
     k = datalib.kpi_metrics(fdf)
-    n = len(fdf)
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Negara terpilih", n)
+    c1.metric("Negara terpilih", len(fdf))
     c2.metric("Mengizinkan nikah < 18 thn", k["under18"])
     c3.metric("Punya celah hukum", k["loophole"])
     c4.metric("Ada path nikah ≤ 13 thn", k["worst"])
 
 
 # ────────────────────────────────────────────────────────────
-# Panel detail negara (klik peta + selectbox fallback)
+# Panel detail negara
 # ────────────────────────────────────────────────────────────
 def render_country_detail(detail: dict | None) -> None:
     if not detail:
-        st.info("Klik salah satu negara di peta, atau pilih dari dropdown di atas, "
-                "untuk melihat detail hukum pernikahannya.")
+        st.info(
+            "🔍 Cari negara di kotak pencarian, atau klik salah satu negara "
+            "di peta, untuk melihat detail hukum pernikahannya."
+        )
         return
     st.markdown(f"### {detail['country']}  ·  `{detail['iso3']}`")
     st.markdown(
@@ -123,67 +147,97 @@ if fdf.empty:
     st.warning("Tidak ada negara yang cocok dengan filter. Longgarkan filter di sidebar.")
     st.stop()
 
-# Config Plotly:
-# - Peta: zoom & pan diaktifkan (tapi dibatasi via geo bounds di chart-nya)
-# - Non-peta: mode bar off, scrollZoom off — diagram lain tak perlu di-zoom.
+# Auto-zoom ke region bila persis 1 region dipilih (revisi tim).
+zoom_region = regions[0] if len(regions) == 1 else None
+
+# Plotly config:
+# - Peta: zoom & pan diaktifkan tapi dibatasi (geo bounds di chart).
+# - Non-peta: mode bar off — chart lain tak perlu di-zoom.
 MAP_CFG = {"displayModeBar": True, "scrollZoom": True,
            "modeBarButtonsToRemove": ["select2d", "lasso2d", "autoScale2d"]}
 STATIC_CFG = {"displayModeBar": False, "scrollZoom": False, "staticPlot": False}
 
-# ── Section 1+4a: Peta (hero) + Donut komposisi side-by-side ──
+# ── Section 1: Peta hero + Search + (Detail panel) + Donut komposisi ──
 st.subheader("Peta Perlindungan Anak dari Pernikahan Dini")
-st.caption("Arahkan kursor untuk detail; klik negara untuk panel detail; "
-           "scroll/drag untuk zoom & geser peta.")
+st.caption(
+    "Arahkan kursor untuk detail; klik negara atau cari di kotak pencarian "
+    "untuk membuka panel detail; scroll/drag untuk zoom & geser peta. "
+    "Klik slice di pie chart untuk memfilter tingkat perlindungan."
+)
 
-map_col, donut_col = st.columns([2, 1])
+country_names = sorted(df["country"].dropna().unique().tolist())
+PLACEHOLDER = "— Pilih atau ketik nama negara —"
+# Search/select negara (selectbox Streamlit otomatis searchable saat options >10).
+picked_name = st.selectbox(
+    "🔍 Cari negara untuk lihat detail",
+    options=[PLACEHOLDER] + country_names,
+    key=COUNTRY_KEY,
+    index=0 if st.session_state.get(COUNTRY_KEY, PLACEHOLDER) == PLACEHOLDER else None,
+    placeholder="Ketik untuk mencari…",
+)
+focus_iso3 = None
+detail = None
+if picked_name and picked_name != PLACEHOLDER:
+    iso3 = df.loc[df["country"] == picked_name, "iso3"]
+    if not iso3.empty:
+        focus_iso3 = iso3.iloc[0]
+        detail = datalib.country_detail(df, focus_iso3)
+
+# Layout kondisional: jika ada negara fokus → peta menyempit, detail muncul
+# di sebelah; jika tidak → peta + donut side-by-side seperti biasa.
+if focus_iso3:
+    map_col, detail_col, donut_col = st.columns([1.2, 2.0, 1.2])
+else:
+    map_col, donut_col = st.columns([2, 1])
+    detail_col = None
+
 with map_col:
     map_event = st.plotly_chart(
-        map_choropleth.render(df, selected_iso3=fdf["iso3"].tolist()),
+        map_choropleth.render(
+            df,
+            selected_iso3=fdf["iso3"].tolist(),
+            focus_iso3=focus_iso3,
+            zoom_region=zoom_region,
+        ),
         width="stretch", config=MAP_CFG,
         on_select="rerun", selection_mode=["points"], key="map",
     )
-with donut_col:
-    st.markdown("**Komposisi (negara terfilter)**")
-    st.plotly_chart(composition.render(fdf), width="stretch", config=STATIC_CFG)
 
-# Panel detail negara — di bawah peta, full-width
-st.markdown("#### Detail Negara")
-sel_col, info_col = st.columns([1, 3])
-with sel_col:
-    country_names = sorted(df["country"].dropna().unique().tolist())
-    # Tentukan default: kalau ada klik peta, pakai iso3 klik; else None.
-    clicked_iso3 = None
-    try:
-        pts = (map_event.get("selection", {}) or {}).get("points", [])
-        if pts:
-            clicked_iso3 = pts[0].get("location")
-    except (AttributeError, TypeError):
-        pass
-    default_name = None
-    if clicked_iso3:
-        match = df[df["iso3"] == clicked_iso3]
-        if not match.empty:
-            default_name = match.iloc[0]["country"]
-    picked_name = st.selectbox(
-        "Lihat detail negara",
-        options=["(Pilih atau klik peta)"] + country_names,
-        index=(country_names.index(default_name) + 1) if default_name else 0,
-        key="country_picker",
+if detail_col is not None:
+    with detail_col:
+        render_country_detail(detail)
+
+with donut_col:
+    pie_event = st.plotly_chart(
+        composition.render(df, severity_filter=severities),
+        width="stretch", config=STATIC_CFG,
+        on_select="rerun", selection_mode=["points"], key="pie",
     )
-with info_col:
-    detail = None
-    if picked_name and picked_name != "(Pilih atau klik peta)":
-        iso3 = df.loc[df["country"] == picked_name, "iso3"].iloc[0]
-        detail = datalib.country_detail(df, iso3)
-    elif clicked_iso3:
-        detail = datalib.country_detail(df, clicked_iso3)
-    render_country_detail(detail)
+
+# ── Handler event: pie click → schedule severities update untuk run berikutnya
+pie_pts = (pie_event.get("selection", {}) or {}).get("points", []) if pie_event else []
+if pie_pts:
+    clicked_label = pie_pts[0].get("label")
+    # Toggle: kalau slice sudah satu-satunya yang aktif, hapus filter; else SET.
+    current = st.session_state.get(SEV_KEY, [])
+    if clicked_label and clicked_label != T.LABEL_NO_DATA:
+        if current == [clicked_label]:
+            st.session_state["pending_pie_label"] = None
+        else:
+            st.session_state["pending_pie_label"] = clicked_label
+        st.rerun()
+
+# ── Handler event: peta click → schedule country picker update
+map_pts = (map_event.get("selection", {}) or {}).get("points", []) if map_event else []
+if map_pts:
+    clicked_iso3 = map_pts[0].get("location")
+    if clicked_iso3 and clicked_iso3 != focus_iso3:
+        st.session_state["pending_map_iso3"] = clicked_iso3
+        st.rerun()
 
 st.divider()
 
-# ── Section 1b: Tangga Perlindungan per Umur (protect_girl_* / protect_boy_*) ──
-# Pertanyaan: untuk anak umur 13/15/17, di berapa negara hukum melindungi mereka?
-# Teknik: small multiples 3 panel side-by-side, plus toggle gender.
+# ── Section 1b: Tangga Perlindungan per Umur ──
 st.subheader("Tangga Perlindungan menurut Umur Anak")
 st.caption(
     "Untuk anak umur 13, 15, dan 17 tahun — di berapa negara mereka secara hukum "
@@ -203,9 +257,7 @@ st.plotly_chart(
 
 st.divider()
 
-# ── Section 1c: Heatmap Erosi Hukum (minage_*_leg → pc → crlaw → loop → any) ──
-# Pertanyaan: dari layer mana erosi datang? Apakah dari izin ortu atau adat/agama?
-# Teknik: heatmap matrix (country × indicator).
+# ── Section 1c: Heatmap Erosi Hukum ──
 st.subheader("Erosi Hukum: Dari Mana Loophole Berasal?")
 st.caption(
     "Tiap baris = satu negara (Top-30 dengan erosi terbesar dari subset terfilter). "
@@ -233,9 +285,6 @@ with col_right:
 st.divider()
 
 # ── Section 3: Timeseries ──
-# Filter region dihapus (duplikat filter region global di sidebar — yang sudah
-# berlaku ke seluruh dashboard termasuk timeseries). Slider tahun dipertahankan
-# karena unik untuk panel ini.
 st.subheader("Perkembangan Perlindungan Hukum, 1995–2023")
 ts_col1, ts_col2 = st.columns([3, 1])
 with ts_col2:
@@ -251,8 +300,6 @@ with ts_col1:
 st.divider()
 
 # ── Footer: 2 tombol unduh + sumber ──
-# Tabel data mentah dihapus (redundant dgn chart + panel detail klik-negara).
-# Unduh data tetap disediakan: versi lengkap (193 negara) + versi terfilter.
 dl_col1, dl_col2, _ = st.columns([1.2, 1.2, 1])
 with dl_col1:
     st.download_button(
