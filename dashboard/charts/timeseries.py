@@ -48,4 +48,4 @@ def render(fdf, year_range=(1995, 2023), region=None) -> go.Figure:
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
         hovermode="x unified",
     )
-    return fig
+    return T.lock_static(fig)

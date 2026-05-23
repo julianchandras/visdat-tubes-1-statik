@@ -1,17 +1,18 @@
 """Section 1 — Peta choropleth (HERO): tingkat perlindungan anak per negara.
 
 Geometri ISO-3 bawaan Plotly + overlay bubble markers (scatter_geo) untuk
-membuat negara kecil tetap terlihat. Highlight tegas untuk negara fokus (hasil
-search atau klik). Auto-zoom ke region bila persis 1 region terpilih.
+membuat negara kecil tetap terlihat & jadi sasaran klik yang reliable.
 
 Revisi tim:
 - Filter tidak menghapus negara dari peta — semua 193 tetap tampil; di-dim
-  bila tidak masuk filter. Kategori "Di luar filter" TIDAK ditampilkan di
-  legenda (visual noise).
-- "Tanpa data" pakai abu medium kontras (#9A9A9A) yang dibedakan dari
-  "di luar filter" (#E6E7E9 light).
-- Bubble overlay supaya negara kecil (Singapore, Nauru, Tuvalu) terlihat.
-- Negara fokus (search/klik) di-highlight ring tebal kontras.
+  bila tidak masuk filter.
+- Saat user fokus 1 negara (search/klik): SEMUA negara lain di-dim ke abu
+  light; hanya negara fokus tetap berwarna. Tidak ada ring overlay —
+  contrast dim cukup punchy.
+- "Tanpa data" abu medium (#9A9A9A); "Di luar filter" abu light (#E6E7E9,
+  tidak masuk legenda).
+- Bubble overlay supaya negara kecil (Singapore, Nauru) terlihat & klik
+  bisa mengenai polygon-pun-bubble.
 - Auto-zoom ke region bila persis 1 region dipilih.
 """
 from __future__ import annotations
@@ -23,7 +24,6 @@ import theme as T
 
 DIMMED_COLOR = "#E6E7E9"
 DIMMED_LABEL = "Di luar filter"
-FOCUS_RING_COLOR = "#0F4C5C"   # deep teal selaras COLOR_HEADLINE
 
 
 def render(
@@ -32,20 +32,30 @@ def render(
     focus_iso3: str | None = None,
     zoom_region: str | None = None,
 ) -> go.Figure:
-    """Render peta choropleth + bubble overlay + focus highlight.
+    """Render peta choropleth + bubble overlay.
 
     Parameters
     ----------
     full_df : DataFrame 193 negara.
-    selected_iso3 : iterable iso3 hasil filter. Negara di luar set ini di-dim.
-    focus_iso3 : 1 iso3 untuk highlight tegas (hasil search/klik).
-    zoom_region : nama region. Bila set, peta auto-fit bounding box-nya.
+    selected_iso3 : iterable iso3 hasil filter sidebar. Negara di luar set
+        ini di-dim. **DIABAIKAN** saat focus_iso3 set — saat fokus, hanya
+        negara fokus yg di-highlight; sisanya semua di-dim.
+    focus_iso3 : 1 iso3 dari search/klik. Saat set, override mode dim:
+        hanya 1 negara berwarna.
+    zoom_region : nama region; auto-fit bbox saat persis 1 region terpilih.
     """
     d = full_df.copy()
-    selected = set(selected_iso3) if selected_iso3 is not None else set(d["iso3"])
+
+    # Mode dim: kalau focus aktif, hanya focus yg "selected" (semua lain dim).
+    # Else: ikuti selected_iso3 (filter sidebar).
+    if focus_iso3:
+        selected = {focus_iso3}
+    elif selected_iso3 is not None:
+        selected = set(selected_iso3)
+    else:
+        selected = set(d["iso3"])
     is_selected = d["iso3"].isin(selected)
 
-    # Label kategori per negara: di luar filter ATAU label tingkat perlindungan.
     short = d["loop_summ"].map(T.LOOP_SUMM_SHORT).fillna(T.LABEL_NO_DATA)
     d["perlindungan"] = short.where(is_selected, DIMMED_LABEL)
     d["loop_summ_label"] = d["loop_summ_label"].fillna(T.LABEL_NO_DATA)
@@ -53,7 +63,6 @@ def render(
     color_map = {T.LOOP_SUMM_SHORT[c]: T.LOOP_SUMM_COLORS[c] for c in T.LOOP_SUMM_ORDER}
     color_map[T.LABEL_NO_DATA] = T.NO_DATA_COLOR
     color_map[DIMMED_LABEL] = DIMMED_COLOR
-    # Urutan legend (tidak termasuk DIMMED — sengaja hidden dari legend).
     order = [T.LOOP_SUMM_SHORT[c] for c in T.LOOP_SUMM_ORDER] + [T.LABEL_NO_DATA]
     if (~is_selected).any():
         order.append(DIMMED_LABEL)
@@ -68,7 +77,6 @@ def render(
         custom_data=["country", "loop_summ_label", "minage_fem_loop_label",
                      "minage_mal_loop_label", "wb_econ_label"],
     )
-    # Border + hide "Di luar filter" dari legend.
     for trace in fig.data:
         if trace.name == DIMMED_LABEL:
             trace.marker.line.color = "#FFFFFF"
@@ -89,8 +97,8 @@ def render(
     )
 
     # ── Bubble overlay: dot kecil di centroid setiap negara, warna sesuai
-    # tingkat perlindungan. Membuat negara kecil (Singapore, Nauru) tetap
-    # visible meski poligon-nya hampir tak terlihat di world view.
+    # kategori. Membuat negara kecil terlihat + bubble klikabel (handler
+    # app.py membaca customdata[0] = country name untuk lookup iso3).
     if "lon" in d.columns and "lat" in d.columns:
         bubble = d.dropna(subset=["lon", "lat"]).copy()
         bubble_colors = [
@@ -98,51 +106,36 @@ def render(
             else color_map.get(cat, T.NO_DATA_COLOR)
             for cat in bubble["perlindungan"]
         ]
+        # Negara fokus dot lebih besar supaya menonjol; sisanya size standar.
+        if focus_iso3:
+            sizes = [10 if i == focus_iso3 else 5 for i in bubble["iso3"]]
+        else:
+            sizes = 6
         fig.add_trace(go.Scattergeo(
             lon=bubble["lon"], lat=bubble["lat"],
             mode="markers",
             marker=dict(
-                size=6,
+                size=sizes,
                 color=bubble_colors,
-                line=dict(width=0.5, color="#FFFFFF"),
+                line=dict(width=0.6, color="#FFFFFF"),
                 opacity=0.95,
             ),
-            text=bubble["country"],
             customdata=bubble[["country", "loop_summ_label",
                                "minage_fem_loop_label", "minage_mal_loop_label",
-                               "wb_econ_label"]].values,
+                               "wb_econ_label", "iso3"]].values,
             hovertemplate=(
                 "<b>%{customdata[0]}</b><br>"
                 "Perlindungan: %{customdata[1]}<br>"
                 "Usia min. perempuan: %{customdata[2]}<br>"
                 "Usia min. laki-laki: %{customdata[3]}<br>"
                 "Pendapatan: %{customdata[4]}"
-                "<extra></extra>"
+                "<extra>Klik untuk detail</extra>"
             ),
             showlegend=False,
             name="bubble",
         ))
 
-    # ── Focus highlight: ring tegas di negara terpilih (search/klik). Render
-    # paling akhir supaya berada di atas semua trace lain.
-    # Defensive: skip kalau kolom lon/lat tidak ada (cache lama yg belum sync).
-    if focus_iso3 and "lon" in d.columns and "lat" in d.columns:
-        focus_row = d[d["iso3"] == focus_iso3]
-        if not focus_row.empty and focus_row["lon"].notna().all():
-            fig.add_trace(go.Scattergeo(
-                lon=focus_row["lon"], lat=focus_row["lat"],
-                mode="markers",
-                marker=dict(
-                    size=22,
-                    color="rgba(0,0,0,0)",
-                    line=dict(width=3, color=FOCUS_RING_COLOR),
-                ),
-                hoverinfo="skip",
-                showlegend=False,
-                name="focus",
-            ))
-
-    # ── Geo configuration: projection + zoom bounds ──
+    # ── Geo config ──
     geo_kwargs = dict(
         projection_type="natural earth",
         showframe=False,
@@ -157,7 +150,6 @@ def render(
             lataxis=dict(range=[lat_min, lat_max]),
         )
     else:
-        # World view dengan batas wajar (tidak bisa zoom-out sampai titik).
         geo_kwargs.update(
             lonaxis=dict(range=[-180, 180]),
             lataxis=dict(range=[-58, 85]),
@@ -167,8 +159,7 @@ def render(
     fig.update_layout(
         **T.PLOTLY_LAYOUT,
         height=520,
-        showlegend=False,   # legenda di-handle via HTML di app.py — shared
-                            # antara peta + pie, center secara horizontal.
+        showlegend=False,   # legenda di-share via HTML di app.py
         clickmode="event+select",
     )
     return fig

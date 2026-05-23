@@ -107,4 +107,4 @@ def render(fdf) -> go.Figure:
         categoryorder="array", categoryarray=y_categories,
         tickfont=dict(size=10),
     )
-    return fig
+    return T.lock_static(fig)

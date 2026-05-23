@@ -79,4 +79,4 @@ def render(full_df, severity_filter: list[float] | None = None) -> go.Figure:
         showlegend=False,    # legenda di-share lewat HTML legend di app.py
         clickmode="event+select",
     )
-    return fig
+    return T.lock_static(fig)

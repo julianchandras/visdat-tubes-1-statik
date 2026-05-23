@@ -139,3 +139,17 @@ PLOTLY_LAYOUT = dict(
     hoverlabel=dict(font=dict(family=FONT_SANS, size=12)),
     colorway=[COLOR_HEADLINE, COLOR_ACCENT, COLOR_SAFE, COLOR_MALE, COLOR_FEMALE],
 )
+
+
+def lock_static(fig):
+    """Disable drag-pan & axis range untuk chart non-peta.
+
+    Plotly default mengaktifkan drag-pan/box-select pada chart Cartesian
+    walau mode bar di-hide via config. User minta chart selain peta benar2
+    tidak bisa digeser. Hover tetap aktif (staticPlot=False di config).
+    Sankey/Pie tidak punya axes tapi dragmode=False tetap berlaku global.
+    """
+    fig.update_layout(dragmode=False)
+    fig.update_xaxes(fixedrange=True)
+    fig.update_yaxes(fixedrange=True)
+    return fig

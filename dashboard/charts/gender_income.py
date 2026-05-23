@@ -51,4 +51,4 @@ def render(fdf) -> go.Figure:
         xaxis=dict(title=None),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
     )
-    return fig
+    return T.lock_static(fig)

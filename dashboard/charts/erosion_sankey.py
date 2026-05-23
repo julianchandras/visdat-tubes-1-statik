@@ -133,4 +133,4 @@ def render(fdf) -> go.Figure:
         annotations=annotations,
         margin=dict(l=10, r=10, t=60, b=20),
     )
-    return fig
+    return T.lock_static(fig)

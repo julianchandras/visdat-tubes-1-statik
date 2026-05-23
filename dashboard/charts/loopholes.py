@@ -40,4 +40,4 @@ def render(fdf) -> go.Figure:
         yaxis=dict(title=None, autorange="reversed"),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
     )
-    return fig
+    return T.lock_static(fig)

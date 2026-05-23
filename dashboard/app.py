@@ -248,10 +248,19 @@ if pie_pts:
             st.session_state["pending_pie_label"] = clicked_label
         st.rerun()
 
-# ── Handler event: peta click → schedule country picker update
+# ── Handler event: peta click → schedule country picker update.
+# Klik bisa hit DUA jenis trace:
+#   1) Polygon choropleth → point dict punya field "location" (= iso3)
+#   2) Bubble scatter_geo → tidak ada "location"; pakai customdata[5] = iso3
+# Handler harus toleran terhadap dua-duanya supaya bubble dot juga klikabel.
 map_pts = (map_event.get("selection", {}) or {}).get("points", []) if map_event else []
 if map_pts:
-    clicked_iso3 = map_pts[0].get("location")
+    pt = map_pts[0]
+    clicked_iso3 = pt.get("location")
+    if not clicked_iso3:
+        cd = pt.get("customdata")
+        if cd and len(cd) > 5:
+            clicked_iso3 = cd[5]
     if clicked_iso3 and clicked_iso3 != focus_iso3:
         st.session_state["pending_map_iso3"] = clicked_iso3
         st.rerun()
