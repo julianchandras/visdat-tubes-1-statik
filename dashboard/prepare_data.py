@@ -134,8 +134,16 @@ def build() -> pd.DataFrame:
     cent = gdf.copy()
     cent["lon"] = cent["geometry"].representative_point().x
     cent["lat"] = cent["geometry"].representative_point().y
+    # Bounding box per negara — untuk auto-zoom peta ke negara fokus saat klik.
+    bounds = cent["geometry"].bounds   # DataFrame: minx, miny, maxx, maxy
+    cent["bbox_lon_min"] = bounds["minx"]
+    cent["bbox_lat_min"] = bounds["miny"]
+    cent["bbox_lon_max"] = bounds["maxx"]
+    cent["bbox_lat_max"] = bounds["maxy"]
     df = df.merge(
-        cent[["ADM0_A3", "lon", "lat"]].rename(columns={"ADM0_A3": "iso3"}),
+        cent[["ADM0_A3", "lon", "lat",
+              "bbox_lon_min", "bbox_lat_min",
+              "bbox_lon_max", "bbox_lat_max"]].rename(columns={"ADM0_A3": "iso3"}),
         on="iso3", how="left",
     )
 

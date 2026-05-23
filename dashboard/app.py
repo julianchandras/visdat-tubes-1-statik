@@ -50,6 +50,11 @@ if "pending_map_iso3" in st.session_state:
         if not match.empty:
             st.session_state[COUNTRY_KEY] = match.iloc[0]
 
+# Klik tombol close panel detail → clear country picker (kembali ke placeholder).
+if st.session_state.pop("pending_close_detail", False):
+    if COUNTRY_KEY in st.session_state:
+        del st.session_state[COUNTRY_KEY]
+
 
 # ────────────────────────────────────────────────────────────
 # Sidebar — filter global
@@ -102,36 +107,68 @@ def render_header(fdf):
 # Panel detail negara
 # ────────────────────────────────────────────────────────────
 def render_country_detail(detail: dict | None) -> None:
+    """Render panel detail negara di kolom kanan saat peta menyempit.
+
+    Revisi tim: font kecil & proporsional, tanpa emoji, kesimpulan bold
+    dgn warna merah (buruk) atau hijau (bersih). Tombol close di pojok.
+    """
     if not detail:
         st.info(
-            "🔍 Cari negara di kotak pencarian, atau klik salah satu negara "
+            "Cari negara di kotak pencarian, atau klik salah satu negara "
             "di peta, untuk melihat detail hukum pernikahannya."
         )
         return
-    st.markdown(f"### {detail['country']}  ·  `{detail['iso3']}`")
+
+    # Header: nama + ISO + tombol close pojok kanan
+    hdr_left, hdr_right = st.columns([5, 1])
+    with hdr_left:
+        st.markdown(
+            f"<div style='font-size:1rem; font-weight:700; color:{T.COLOR_HEADLINE};'>"
+            f"{detail['country']}"
+            f" <span style='font-size:0.75rem; color:{T.COLOR_MUTED}; "
+            f"font-weight:400;'>· {detail['iso3']}</span></div>",
+            unsafe_allow_html=True,
+        )
+    with hdr_right:
+        if st.button("✕", key="close_detail", help="Tutup panel detail"):
+            st.session_state["pending_close_detail"] = True
+            st.rerun()
+
+    # Body — kompak, single block tanpa horizontal rule
     st.markdown(
-        f"**Region:** {detail['region']}  \n"
-        f"**Pendapatan:** {detail['income'] or '—'}  \n"
-        f"**Perlindungan:** {detail['perlindungan'] or '—'}"
+        f"<div style='font-size:0.82rem; color:{T.COLOR_BODY}; "
+        f"line-height:1.55; margin-top:0.4rem;'>"
+        f"<b>Region:</b> {detail['region']}<br>"
+        f"<b>Pendapatan:</b> {detail['income'] or '—'}<br>"
+        f"<b>Perlindungan:</b> {detail['perlindungan'] or '—'}<br>"
+        f"<b>Usia min. perempuan:</b> {detail['minage_fem'] or '—'}<br>"
+        f"<b>Usia min. laki-laki:</b> {detail['minage_mal'] or '—'}"
+        f"</div>",
+        unsafe_allow_html=True,
     )
-    st.markdown("---")
-    st.markdown(
-        f"**Usia minimum nikah (dengan loophole):**  \n"
-        f"• Perempuan: {detail['minage_fem'] or '—'}  \n"
-        f"• Laki-laki: {detail['minage_mal'] or '—'}"
-    )
+
+    # Kesimpulan: bold, MERAH bila ada celah/gap; HIJAU bila bersih.
+    # Tanpa emoji (revisi tim).
     flags = []
     if detail["has_loophole_fem"]:
-        flags.append("⚠️ Ada celah hukum untuk perempuan")
+        flags.append("Ada celah hukum untuk perempuan")
     if detail["has_loophole_mal"]:
-        flags.append("⚠️ Ada celah hukum untuk laki-laki")
+        flags.append("Ada celah hukum untuk laki-laki")
     if detail["has_gender_gap"]:
-        flags.append("⚠️ Ada kesenjangan usia antar gender")
+        flags.append("Ada kesenjangan usia antar gender")
+
     if flags:
-        for f in flags:
-            st.markdown(f)
+        body = "<br>".join(flags)
+        color = T.COLOR_DANGER       # #C71E3A — merah
     else:
-        st.markdown("✅ Tidak ada celah hukum maupun kesenjangan gender.")
+        body = "Tidak ada celah hukum maupun kesenjangan gender"
+        color = T.COLOR_SAFE         # #2A9D8F — hijau-teal
+
+    st.markdown(
+        f"<div style='font-size:0.85rem; color:{color}; font-weight:700; "
+        f"margin-top:0.6rem; line-height:1.45;'>{body}</div>",
+        unsafe_allow_html=True,
+    )
 
 
 # ────────────────────────────────────────────────────────────

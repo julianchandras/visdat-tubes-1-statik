@@ -135,7 +135,7 @@ def render(
             name="bubble",
         ))
 
-    # ── Geo config ──
+    # ── Geo config — priority: focus negara > region > world ──
     geo_kwargs = dict(
         projection_type="natural earth",
         showframe=False,
@@ -143,13 +143,31 @@ def render(
         bgcolor="rgba(0,0,0,0)",
         landcolor="#ECEDEF",
     )
-    if zoom_region and zoom_region in T.REGION_BBOX:
+    zoom_set = False
+    if focus_iso3 and {"bbox_lon_min", "bbox_lat_min",
+                       "bbox_lon_max", "bbox_lat_max"}.issubset(d.columns):
+        focus_row = d[d["iso3"] == focus_iso3]
+        if not focus_row.empty:
+            r = focus_row.iloc[0]
+            bounds = T.country_zoom_bounds(
+                r["bbox_lon_min"], r["bbox_lat_min"],
+                r["bbox_lon_max"], r["bbox_lat_max"],
+            )
+            if bounds is not None:
+                lon_lo, lon_hi, lat_lo, lat_hi = bounds
+                geo_kwargs.update(
+                    lonaxis=dict(range=[lon_lo, lon_hi]),
+                    lataxis=dict(range=[lat_lo, lat_hi]),
+                )
+                zoom_set = True
+    if not zoom_set and zoom_region and zoom_region in T.REGION_BBOX:
         lon_min, lon_max, lat_min, lat_max = T.REGION_BBOX[zoom_region]
         geo_kwargs.update(
             lonaxis=dict(range=[lon_min, lon_max]),
             lataxis=dict(range=[lat_min, lat_max]),
         )
-    else:
+        zoom_set = True
+    if not zoom_set:
         geo_kwargs.update(
             lonaxis=dict(range=[-180, 180]),
             lataxis=dict(range=[-58, 85]),

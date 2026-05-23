@@ -96,6 +96,10 @@ def render(fdf) -> go.Figure:
 
     fig = go.Figure(go.Sankey(
         arrangement="snap",
+        # textfont eksplisit: warna dark + family Arial supaya label node tidak
+        # tampak "hollow" (default Plotly Sankey font kadang tipis/transparan
+        # tergantung versi & theme). Size 13 + dark navy = jelas terbaca.
+        textfont=dict(color=T.COLOR_BODY, size=13, family="Arial, sans-serif"),
         node=dict(
             label=node_labels,
             color=node_colors,

@@ -105,14 +105,15 @@ def render(fdf) -> go.Figure:
                 row=1, col=col_i,
             )
 
-    # Tambah annotations outside: P di ATAS bar (yshift +14px),
-    # L di BAWAH bar (yshift -14px). Hindari menumpuk antar dua bar.
+    # Tambah annotations outside: keduanya di ATAS bar masing-masing
+    # (yshift +22px) supaya konsisten visual. bargap besar (0.55) memberi
+    # cukup ruang antara dua bar sehingga L annotation (di atas L bar) tidak
+    # menyentuh P bar di atasnya.
     for col_i, glabel, mid_x, n, color in annotations_data:
-        yshift = 14 if glabel == "Perempuan" else -14
         fig.add_annotation(
             xref=f"x{col_i}", yref=f"y{col_i}",
             x=mid_x, y=glabel,
-            yshift=yshift,
+            yshift=22,
             text=f"<b>{n}</b>",
             showarrow=False,
             font=dict(size=10, color=color, family=T.FONT_SANS),

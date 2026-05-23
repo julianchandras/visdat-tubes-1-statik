@@ -141,6 +141,37 @@ PLOTLY_LAYOUT = dict(
 )
 
 
+def country_zoom_bounds(lon_min, lat_min, lon_max, lat_max,
+                        pad_frac: float = 0.30, min_pad: float = 2.0):
+    """Hitung bounding box auto-zoom untuk satu negara dgn padding sehat.
+
+    Mengatasi 2 edge case:
+    - Negara raksasa (Russia, USA, Canada) yang spannya >60° lon: gunakan
+      centroid + lebar maks (40° lon, 25° lat) supaya tidak balik ke world view.
+    - Negara lintas antimeridian (mis. Russia di shapefile NE split ke -180/+180):
+      span jadi 360° padahal sebenarnya negara tersebut compact di satu sisi.
+      Sama penanganannya — pakai centroid + lebar maks.
+
+    Return (lon_lo, lon_hi, lat_lo, lat_hi) atau None bila input invalid.
+    """
+    import math
+    if any(v is None or (isinstance(v, float) and math.isnan(v))
+           for v in (lon_min, lat_min, lon_max, lat_max)):
+        return None
+    lon_span = lon_max - lon_min
+    lat_span = lat_max - lat_min
+    # Centroid bbox
+    cx = (lon_min + lon_max) / 2
+    cy = (lat_min + lat_max) / 2
+    # Negara raksasa atau lintas antimeridian → clamp ke 40°×25° around centroid
+    if lon_span > 60 or lat_span > 35:
+        return cx - 20, cx + 20, cy - 12, cy + 12
+    lon_pad = max(min_pad, lon_span * pad_frac)
+    lat_pad = max(min_pad, lat_span * pad_frac)
+    return (lon_min - lon_pad, lon_max + lon_pad,
+            lat_min - lat_pad, lat_max + lat_pad)
+
+
 def lock_static(fig):
     """Disable drag-pan & axis range untuk chart non-peta.
 
