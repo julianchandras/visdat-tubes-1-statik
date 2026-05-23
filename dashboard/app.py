@@ -194,42 +194,44 @@ with col_right:
 st.divider()
 
 # ── Section 3: Timeseries ──
+# Filter region dihapus (duplikat filter region global di sidebar — yang sudah
+# berlaku ke seluruh dashboard termasuk timeseries). Slider tahun dipertahankan
+# karena unik untuk panel ini.
 st.subheader("Perkembangan Perlindungan Hukum, 1995–2023")
 ts_col1, ts_col2 = st.columns([3, 1])
 with ts_col2:
-    region_opt = st.selectbox(
-        "Region", options=["Semua region"] + T.REGION_ORDER, index=0,
-    )
     year_range = st.slider(
         "Rentang tahun", min_value=1995, max_value=2023, value=(1995, 2023),
     )
-region_arg = None if region_opt == "Semua region" else region_opt
 with ts_col1:
     st.plotly_chart(
-        timeseries.render(fdf, year_range=year_range, region=region_arg),
+        timeseries.render(fdf, year_range=year_range),
         width="stretch", config=STATIC_CFG,
     )
 
 st.divider()
 
-# ── Section 4b: Tabel data ──
-st.subheader("Data Negara Terpilih")
-table_cols = ["country", "region", "wb_econ_label", "loop_summ_label",
-              "minage_fem_loop_label", "minage_mal_loop_label"]
-show = fdf[table_cols].rename(columns={
-    "country": "Negara", "region": "Region", "wb_econ_label": "Pendapatan",
-    "loop_summ_label": "Perlindungan",
-    "minage_fem_loop_label": "Usia min. P", "minage_mal_loop_label": "Usia min. L",
-})
-st.dataframe(show, width="stretch", height=320, hide_index=True)
-st.download_button(
-    "⬇️ Unduh data terpilih (CSV)",
-    data=fdf.to_csv(index=False).encode("utf-8"),
-    file_name="hukum-pernikahan-anak-terpilih.csv",
-    mime="text/csv",
-)
+# ── Footer: 2 tombol unduh + sumber ──
+# Tabel data mentah dihapus (redundant dgn chart + panel detail klik-negara).
+# Unduh data tetap disediakan: versi lengkap (193 negara) + versi terfilter.
+dl_col1, dl_col2, _ = st.columns([1.2, 1.2, 1])
+with dl_col1:
+    st.download_button(
+        f"⬇️ Unduh data lengkap ({len(df)} negara)",
+        data=df.to_csv(index=False).encode("utf-8"),
+        file_name="hukum-pernikahan-anak-2023-lengkap.csv",
+        mime="text/csv",
+        help="Dataset 193 negara hasil pembersihan, siap dipakai ulang.",
+    )
+with dl_col2:
+    st.download_button(
+        f"⬇️ Unduh data sesuai filter ({len(fdf)} negara)",
+        data=fdf.to_csv(index=False).encode("utf-8"),
+        file_name="hukum-pernikahan-anak-2023-terfilter.csv",
+        mime="text/csv",
+        help="Subset sesuai filter di sidebar.",
+    )
 
-# ── Footer ──
 st.divider()
 st.caption(
     "Dataset: WORLD Policy Analysis Center, Child Marriage Laws 2023 · "
