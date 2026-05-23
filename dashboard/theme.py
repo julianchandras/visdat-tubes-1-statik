@@ -22,10 +22,19 @@ LOOP_SUMM_LABELS = {
     1.0: "Bisa menikah ≤ 13 tahun",
     9.0: "Mungkin < 18 (diatur adat/agama)",
 }
+# Label ringkas untuk legend peta (label penuh tetap dipakai di hover & donut).
+LOOP_SUMM_SHORT = {
+    5.0: "Setara, ≥ 18 thn",
+    3.0: "1 masalah",
+    2.0: "2 masalah",
+    1.0: "Bisa ≤ 13 thn",
+    9.0: "Adat/agama",
+}
 # Urutan tampil (legend, sumbu kategori): terbaik → terburuk → ambigu.
 LOOP_SUMM_ORDER = [5.0, 3.0, 2.0, 1.0, 9.0]
 
 NO_DATA_COLOR = "#D9D9D9"
+LABEL_NO_DATA = "Tanpa data"
 
 # ── Warna gender ──
 COLOR_FEMALE = "#C71E3A"
@@ -64,12 +73,13 @@ FONT_SERIF = "Playfair Display, Georgia, serif"
 FONT_SANS = "Source Sans 3, -apple-system, Segoe UI, sans-serif"
 
 # Template Plotly default untuk seluruh chart (konsistensi visual).
+# Tanpa title_font: judul section sudah dipegang st.subheader; menyetel
+# title_font tanpa teks membuat Plotly 6 merender judul literal "undefined".
 PLOTLY_LAYOUT = dict(
     font=dict(family=FONT_SANS, color=COLOR_BODY, size=13),
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
-    title_font=dict(family=FONT_SERIF, color=COLOR_HEADLINE, size=18),
-    margin=dict(l=10, r=10, t=50, b=10),
+    margin=dict(l=10, r=10, t=30, b=10),
     hoverlabel=dict(font=dict(family=FONT_SANS, size=12)),
     colorway=[COLOR_HEADLINE, COLOR_ACCENT, COLOR_SAFE, COLOR_MALE, COLOR_FEMALE],
 )

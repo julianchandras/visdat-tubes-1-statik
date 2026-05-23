@@ -13,20 +13,21 @@ import theme as T
 
 def render(fdf) -> go.Figure:
     d = fdf.copy()
-    # loop_summ NaN → label "Tanpa data" supaya tetap tampil abu-abu.
-    d["loop_summ_label"] = d["loop_summ_label"].fillna("Tanpa data")
+    # Kolom legend ringkas (label penuh tetap untuk hover). NaN → "Tanpa data".
+    d["perlindungan"] = d["loop_summ"].map(T.LOOP_SUMM_SHORT).fillna(T.LABEL_NO_DATA)
+    d["loop_summ_label"] = d["loop_summ_label"].fillna(T.LABEL_NO_DATA)
 
-    color_map = {T.LOOP_SUMM_LABELS[c]: T.LOOP_SUMM_COLORS[c] for c in T.LOOP_SUMM_ORDER}
-    color_map["Tanpa data"] = T.NO_DATA_COLOR
-    order = [T.LOOP_SUMM_LABELS[c] for c in T.LOOP_SUMM_ORDER] + ["Tanpa data"]
+    color_map = {T.LOOP_SUMM_SHORT[c]: T.LOOP_SUMM_COLORS[c] for c in T.LOOP_SUMM_ORDER}
+    color_map[T.LABEL_NO_DATA] = T.NO_DATA_COLOR
+    order = [T.LOOP_SUMM_SHORT[c] for c in T.LOOP_SUMM_ORDER] + [T.LABEL_NO_DATA]
 
     fig = px.choropleth(
         d,
         locations="iso3",
         locationmode="ISO-3",
-        color="loop_summ_label",
+        color="perlindungan",
         color_discrete_map=color_map,
-        category_orders={"loop_summ_label": order},
+        category_orders={"perlindungan": order},
         custom_data=["country", "loop_summ_label", "minage_fem_loop_label",
                      "minage_mal_loop_label", "wb_econ_label"],
     )
