@@ -125,7 +125,8 @@ def render(
 
     # ── Focus highlight: ring tegas di negara terpilih (search/klik). Render
     # paling akhir supaya berada di atas semua trace lain.
-    if focus_iso3:
+    # Defensive: skip kalau kolom lon/lat tidak ada (cache lama yg belum sync).
+    if focus_iso3 and "lon" in d.columns and "lat" in d.columns:
         focus_row = d[d["iso3"] == focus_iso3]
         if not focus_row.empty and focus_row["lon"].notna().all():
             fig.add_trace(go.Scattergeo(

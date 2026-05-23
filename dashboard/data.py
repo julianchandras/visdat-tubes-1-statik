@@ -18,19 +18,21 @@ M_COLS = [f"minage_par_18_m_{y}" for y in YEARS]
 
 
 @st.cache_data(show_spinner=False)
-def _load_csv(_path: Path, _mtime: float) -> pd.DataFrame:
+def _load_csv(path_str: str, mtime: float) -> pd.DataFrame:
     """Internal: cached read keyed by mtime supaya cache invalidate otomatis
     saat CSV di-regenerate atau ter-update (mis. setelah git pull di Streamlit
-    Cloud). Tanpa ini, signature load_data() tetap sama walau CSV berubah,
-    sehingga cache lama yang punya skema lebih sempit bisa bertahan & memicu
-    KeyError di chart yang butuh kolom baru.
+    Cloud). PENTING: nama parameter TIDAK boleh prefix '_' — di Streamlit
+    cache_data, prefix underscore = "jangan ikut cache key" (untuk objek
+    non-hashable seperti DB connection). Pakai prefix _ → cache key konstan
+    → cache tidak pernah invalidate walau mtime berubah → bug skema lama
+    bertahan.
     """
-    return pd.read_csv(_path)
+    return pd.read_csv(path_str)
 
 
 def load_data() -> pd.DataFrame:
     """Load dataset dashboard. Cache invalidate otomatis bila file CSV berubah."""
-    return _load_csv(DATA_PATH, DATA_PATH.stat().st_mtime)
+    return _load_csv(str(DATA_PATH), DATA_PATH.stat().st_mtime)
 
 
 def filter_data(
