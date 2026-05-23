@@ -31,6 +31,26 @@ def render(fdf, gender: str = "girl") -> go.Figure:
     """
     prefix = "protect_girl" if gender == "girl" else "protect_boy"
 
+    # Defensive: kalau kolom yang dibutuhkan tidak ada (mis. data cache lama
+    # dari skema CSV sebelumnya), tampilkan figure dgn pesan yang berguna
+    # alih-alih KeyError stacktrace.
+    needed = [f"{prefix}_{a}" for a in AGES]
+    missing = [c for c in needed if c not in fdf.columns]
+    if missing:
+        fig = go.Figure()
+        fig.add_annotation(
+            text=(
+                "Data belum lengkap (kolom " + ", ".join(missing) + " hilang).<br>"
+                "Coba refresh halaman atau Reboot app."
+            ),
+            xref="paper", yref="paper", x=0.5, y=0.5,
+            showarrow=False, font=dict(size=13, color=T.COLOR_MUTED),
+        )
+        fig.update_layout(height=240, **{k: v for k, v in T.PLOTLY_LAYOUT.items()
+                                         if k not in ("colorway", "margin")})
+        fig.update_xaxes(visible=False); fig.update_yaxes(visible=False)
+        return fig
+
     fig = make_subplots(
         rows=1, cols=3,
         subplot_titles=[f"Umur {a} tahun" for a in AGES],

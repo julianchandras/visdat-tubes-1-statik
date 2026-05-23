@@ -34,6 +34,23 @@ def render(fdf, top_n: int = 30) -> go.Figure:
     layer_cols = [c for c, _ in T.EROSION_LAYERS]
     layer_labels = [lbl for _, lbl in T.EROSION_LAYERS]
 
+    # Defensive: graceful kalau kolom layer hilang (mis. cache CSV skema lama).
+    missing = [c for c in layer_cols if c not in fdf.columns]
+    if missing:
+        fig = go.Figure()
+        fig.add_annotation(
+            text=(
+                "Data belum lengkap (kolom " + ", ".join(missing) + " hilang).<br>"
+                "Coba refresh halaman atau Reboot app."
+            ),
+            xref="paper", yref="paper", x=0.5, y=0.5,
+            showarrow=False, font=dict(size=13, color=T.COLOR_MUTED),
+        )
+        fig.update_layout(height=360, **{k: v for k, v in T.PLOTLY_LAYOUT.items()
+                                         if k not in ("colorway", "margin")})
+        fig.update_xaxes(visible=False); fig.update_yaxes(visible=False)
+        return fig
+
     # Hitung skor "erosi" per negara: range nilai antar layer (yang non-NaN).
     sub = fdf[["country", "iso3"] + layer_cols].copy()
     sub["erosion"] = sub[layer_cols].max(axis=1) - sub[layer_cols].min(axis=1)
