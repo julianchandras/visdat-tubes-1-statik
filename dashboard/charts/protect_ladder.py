@@ -90,12 +90,20 @@ def render(fdf, age: int = 13) -> go.Figure:
     fig.update_layout(
         **layout,
         barmode="stack",
-        height=280,
+        height=320,   # +40 dari 280 untuk akomodasi legend 2 row
         showlegend=True,
         legend=dict(
-            orientation="h", yanchor="bottom", y=-0.35,
-            xanchor="center", x=0.5, font=dict(size=10),
+            orientation="h",
+            yanchor="bottom", y=-0.55,        # turun lebih, beri ruang 2 row
+            xanchor="center", x=0.5,
+            font=dict(size=10),
             traceorder="normal",
+            # entrywidth=0.48 (= 48% legend container per item) → 4 kategori
+            # otomatis wrap jadi 2 item per row × 2 row, dengan sisa 4% jadi
+            # gap implicit antar kolom. Behavior konsisten di width berapapun
+            # (revisi tim: "seluas apapun layoutnya pastikan dia ada dua row").
+            entrywidthmode="fraction",
+            entrywidth=0.48,
         ),
         bargap=0.40,
     )
