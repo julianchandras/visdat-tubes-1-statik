@@ -372,32 +372,19 @@ with bot_left:
     st.caption(
         "Untuk anak umur ini, di berapa negara mereka secara hukum dilarang "
         "menikah, hanya boleh dgn pengadilan/kehamilan, boleh dgn izin orang tua, "
-        "atau tanpa pembatasan?"
+        "atau tanpa pembatasan?  \n"
+        "**P** = Perempuan · **L** = Laki-laki"
     )
-    # Baris kontrol: radio umur + 2 checkbox gender (revisi tim: default
-    # keduanya aktif; user bisa matikan salah satu untuk fokus 1 gender).
-    age_col, p_col, l_col = st.columns([3, 1.2, 1.2])
-    with age_col:
-        age_choice = st.radio(
-            "Umur anak",
-            options=[13, 15, 17],
-            horizontal=True,
-            format_func=lambda a: f"{a} tahun",
-            key="protect_age",
-            label_visibility="collapsed",
-        )
-    with p_col:
-        show_p = st.checkbox("Perempuan (P)", value=True, key="ladder_show_p")
-    with l_col:
-        show_l = st.checkbox("Laki-laki (L)", value=True, key="ladder_show_l")
-    # Susun list genders sesuai checkbox; menjaga order P kemudian L.
-    selected_genders = []
-    if show_p:
-        selected_genders.append(("girl", "P", "Perempuan (P)"))
-    if show_l:
-        selected_genders.append(("boy", "L", "Laki-laki (L)"))
+    age_choice = st.radio(
+        "Umur anak",
+        options=[13, 15, 17],
+        horizontal=True,
+        format_func=lambda a: f"{a} tahun",
+        key="protect_age",
+        label_visibility="collapsed",
+    )
     st.plotly_chart(
-        protect_ladder.render(fdf, age=age_choice, genders=selected_genders),
+        protect_ladder.render(fdf, age=age_choice),
         width="stretch", config=STATIC_CFG,
     )
 with bot_right:

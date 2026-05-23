@@ -47,21 +47,13 @@ def _empty_figure(message: str) -> go.Figure:
     return T.lock_static(fig)
 
 
-def render(fdf, age: int = 13, genders: list | None = None) -> go.Figure:
-    """Render single-age view utk gender yang aktif.
+def render(fdf, age: int = 13) -> go.Figure:
+    """Render single-age view dgn KEDUA gender (P & L) selalu ditampilkan.
 
-    Parameters
-    ----------
-    fdf : DataFrame negara terfilter.
-    age : 13, 15, atau 17.
-    genders : list tuple GENDERS subset yg aktif. Default = keduanya. Empty
-        list = tidak ada gender dipilih (render pesan).
+    Revisi tim: filter checkbox P/L dihapus (tidak perlu); keterangan
+    mapping P=Perempuan, L=Laki-laki ada di caption Tangga di app.py.
     """
-    if genders is None:
-        genders = list(GENDERS)
-    if not genders:
-        return _empty_figure("Pilih minimal satu gender di atas.")
-
+    genders = list(GENDERS)
     needed = [f"protect_{g[0]}_{age}" for g in genders]
     missing = [c for c in needed if c not in fdf.columns]
     if missing:
