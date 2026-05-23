@@ -1,17 +1,18 @@
-"""Section bottom-left — Tangga Perlindungan menurut Umur Anak (single age).
+"""Section bottom-left — Tangga Perlindungan menurut Umur Anak.
 
-Saat user pilih umur (13 / 15 / 17 tahun lewat widget filter di app.py), render
-DUA bar horizontal sandingkan: Perempuan & Laki-laki, masing-masing 4 kategori
-stack (Dilarang / Court+pregnancy / Izin ortu / Tanpa pembatasan).
+Single-age view: untuk umur yang dipilih (13/15/17 via radio di app.py), render
+horizontal stacked bars untuk gender yang aktif (P, L, atau keduanya — via 2
+checkbox Streamlit di app.py).
 
-Angka per segment di-render INSIDE bar via Plotly built-in `text` (bukan
-annotations layer). Trade-off:
-- Inside text otomatis ikut visibility trace → saat user klik legend untuk
-  toggle kategori, angka kategori ybs juga hilang (TIDAK orphan). Revisi tim:
-  "anotasi angka bagi kategori dinonaktifkan seharusnya dihapus".
-- Segment kecil (count < threshold) bisa kurang terbaca; mitigasi: warna
-  text per-kategori berbasis luminance bg (dark text pada bg terang, white
-  pada bg gelap) + bold.
+Y-axis pakai short label "P" / "L" (revisi tim: keterangan panjang ada di
+checkbox filter ("Perempuan (P)" / "Laki-laki (L)"), y-axis tidak perlu
+diulang).
+
+Angka per segment via Plotly built-in trace `text` (textposition='inside') →
+otomatis ikut visibility saat user toggle kategori di legend (no orphan).
+
+Legend 4 kategori dipaksa 2×2 grid via entrywidth fraction (revisi tim:
+"seluas apapun layoutnya pastikan dia ada dua row").
 """
 from __future__ import annotations
 
@@ -19,65 +20,77 @@ import plotly.graph_objects as go
 
 import theme as T
 
-
-GENDERS = (("girl", "Perempuan"), ("boy", "Laki-laki"))
+# (key column, short y-axis label, long checkbox label)
+GENDERS = (
+    ("girl", "P", "Perempuan (P)"),
+    ("boy",  "L", "Laki-laki (L)"),
+)
 
 
 def _text_color_for_bg(hex_color: str) -> str:
-    """Pilih warna text (dark navy vs white) berdasarkan luminance bg.
-
-    Threshold 140 di skala 0..255 — cukup baik untuk 4 PROTECT_COLORS:
-    - hijau gelap #1A7F3C → white
-    - kuning #F4B400 → dark
-    - terracotta #E07A5F → dark
-    - dark red #7B0000 → white
-    """
+    """Pilih warna text (dark navy vs white) berdasarkan luminance bg."""
     h = hex_color.lstrip("#")
     r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
     Y = 0.299 * r + 0.587 * g + 0.114 * b
     return "#2D3142" if Y > 140 else "white"
 
 
-def render(fdf, age: int = 13) -> go.Figure:
-    """Render single-age view."""
-    needed = [f"protect_{g}_{age}" for g, _ in GENDERS]
+def _empty_figure(message: str) -> go.Figure:
+    fig = go.Figure()
+    fig.add_annotation(
+        text=message, xref="paper", yref="paper", x=0.5, y=0.5,
+        showarrow=False, font=dict(size=12, color=T.COLOR_MUTED),
+    )
+    fig.update_layout(height=280, **{k: v for k, v in T.PLOTLY_LAYOUT.items()
+                                     if k not in ("colorway", "margin")})
+    fig.update_xaxes(visible=False); fig.update_yaxes(visible=False)
+    return T.lock_static(fig)
+
+
+def render(fdf, age: int = 13, genders: list | None = None) -> go.Figure:
+    """Render single-age view utk gender yang aktif.
+
+    Parameters
+    ----------
+    fdf : DataFrame negara terfilter.
+    age : 13, 15, atau 17.
+    genders : list tuple GENDERS subset yg aktif. Default = keduanya. Empty
+        list = tidak ada gender dipilih (render pesan).
+    """
+    if genders is None:
+        genders = list(GENDERS)
+    if not genders:
+        return _empty_figure("Pilih minimal satu gender di atas.")
+
+    needed = [f"protect_{g[0]}_{age}" for g in genders]
     missing = [c for c in needed if c not in fdf.columns]
     if missing:
-        fig = go.Figure()
-        fig.add_annotation(
-            text=f"Data umur {age} belum lengkap. Coba refresh halaman.",
-            xref="paper", yref="paper", x=0.5, y=0.5,
-            showarrow=False, font=dict(size=12, color=T.COLOR_MUTED),
+        return _empty_figure(
+            f"Data umur {age} belum lengkap. Coba refresh halaman."
         )
-        fig.update_layout(height=280, **{k: v for k, v in T.PLOTLY_LAYOUT.items()
-                                         if k not in ("colorway", "margin")})
-        fig.update_xaxes(visible=False); fig.update_yaxes(visible=False)
-        return T.lock_static(fig)
 
     # Hitung count per (gender, kategori).
     gender_counts: dict[str, dict[float, int]] = {}
-    for gkey, glabel in GENDERS:
+    for gkey, gshort, _ in genders:
         column = f"protect_{gkey}_{age}"
-        gender_counts[glabel] = {
+        gender_counts[gshort] = {
             code: int((fdf[column] == code).sum()) for code in T.PROTECT_ORDER
         }
 
     fig = go.Figure()
     for code in T.PROTECT_ORDER:
-        xs = [gender_counts[glabel][code] for _, glabel in GENDERS]
-        ys = [glabel for _, glabel in GENDERS]
+        xs = [gender_counts[gshort][code] for _, gshort, _ in genders]
+        ys = [gshort for _, gshort, _ in genders]
         hover_lines = [
-            f"<b>{glabel}, umur {age} thn</b><br>"
+            f"<b>{glong}, umur {age} thn</b><br>"
             f"{T.PROTECT_LABELS[code]}: {n} negara"
-            for (_, glabel), n in zip(GENDERS, xs)
+            for (_, _, glong), n in zip(genders, xs)
         ]
         text_color = _text_color_for_bg(T.PROTECT_COLORS[code])
         fig.add_trace(go.Bar(
             y=ys, x=xs, orientation="h",
             name=T.PROTECT_LABELS[code],
             marker_color=T.PROTECT_COLORS[code],
-            # Inside text — otomatis hilang saat user toggle kategori dari
-            # legend (Plotly menghilangkan trace, text ikut hilang).
             text=[f"<b>{n}</b>" if n > 0 else "" for n in xs],
             textposition="inside",
             insidetextanchor="middle",
@@ -86,24 +99,29 @@ def render(fdf, age: int = 13) -> go.Figure:
             hovertemplate="%{hovertext}<extra></extra>",
         ))
 
+    # Y-axis order: P di atas, L di bawah (Plotly horizontal bar bawah → atas).
+    y_categories_reverse = [g[1] for g in reversed(GENDERS)]   # ["L", "P"]
+
     layout = {k: v for k, v in T.PLOTLY_LAYOUT.items() if k != "colorway"}
     fig.update_layout(
         **layout,
         barmode="stack",
-        height=320,   # +40 dari 280 untuk akomodasi legend 2 row
+        height=320,
         showlegend=True,
         legend=dict(
             orientation="h",
-            yanchor="bottom", y=-0.55,        # turun lebih, beri ruang 2 row
+            yanchor="bottom", y=-0.55,
             xanchor="center", x=0.5,
             font=dict(size=10),
             traceorder="normal",
-            # entrywidth=0.48 (= 48% legend container per item) → 4 kategori
-            # otomatis wrap jadi 2 item per row × 2 row, dengan sisa 4% jadi
-            # gap implicit antar kolom. Behavior konsisten di width berapapun
-            # (revisi tim: "seluas apapun layoutnya pastikan dia ada dua row").
+            # entrywidth=0.45 fraction → tiap item 45% legend container.
+            # 2×0.45=0.90 (2 fit per row dgn 10% gap distribusi), 3×0.45=
+            # 1.35 (3rd wrap). Memastikan 2×2 grid konsisten di layout
+            # selebar apapun (revisi tim ulangan: previously 0.48 belum
+            # cukup robust). Sisa 10% jadi gap visual antar kolom.
             entrywidthmode="fraction",
-            entrywidth=0.48,
+            entrywidth=0.45,
+            itemsizing="constant",
         ),
         bargap=0.40,
     )
@@ -111,7 +129,7 @@ def render(fdf, age: int = 13) -> go.Figure:
     fig.update_yaxes(
         showgrid=False, zeroline=False,
         categoryorder="array",
-        categoryarray=["Laki-laki", "Perempuan"],
-        tickfont=dict(size=11),
+        categoryarray=y_categories_reverse,
+        tickfont=dict(size=12, color=T.COLOR_HEADLINE),
     )
     return T.lock_static(fig)
