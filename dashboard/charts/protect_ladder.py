@@ -75,11 +75,14 @@ def render(fdf, age: int = 13) -> go.Figure:
             hovertemplate="%{hovertext}<extra></extra>",
         ))
 
-    # Annotations: keduanya di ATAS bar (yshift +22), warna sesuai kategori.
+    # Annotations: keduanya di ATAS bar (yshift +32), warna sesuai kategori.
+    # yshift dinaikkan dari +22 → +32 supaya angka jelas DI LUAR bar (revisi
+    # tim: bar height pixel ternyata lebih besar dari estimasi awal — bar
+    # half ~27px di subplot height 280, jadi +22 masih dalam area bar).
     for glabel, mid_x, n, color in annotations_data:
         fig.add_annotation(
             x=mid_x, y=glabel,
-            yshift=22,
+            yshift=32,
             text=f"<b>{n}</b>",
             showarrow=False,
             font=dict(size=10, color=color, family=T.FONT_SANS),
@@ -90,10 +93,10 @@ def render(fdf, age: int = 13) -> go.Figure:
     fig.update_layout(
         **layout,
         barmode="stack",
-        height=280,
+        height=320,   # naik dari 280 supaya ada ruang vertikal untuk yshift+32
         showlegend=True,
         legend=dict(
-            orientation="h", yanchor="bottom", y=-0.40,
+            orientation="h", yanchor="bottom", y=-0.35,
             xanchor="center", x=0.5, font=dict(size=10),
             traceorder="normal",
         ),

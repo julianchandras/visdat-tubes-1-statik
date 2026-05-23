@@ -26,6 +26,24 @@ st.set_page_config(
 
 df = datalib.load_data()
 
+# ── Global CSS injection ──────────────────────────────────────────
+# Beri panel detail (st.container border=True) kesan "floating overlay":
+# background semi-transparan + shadow halus. Streamlit tidak punya true
+# overlay/popup; ini pendekatan terdekat. Targeting via stVerticalBlock-
+# BorderWrapper data-testid (Streamlit ≥1.34).
+st.markdown(
+    """
+    <style>
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background: rgba(255, 255, 255, 0.85);
+        box-shadow: 0 2px 8px rgba(15, 76, 92, 0.08);
+        backdrop-filter: blur(2px);
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 # ────────────────────────────────────────────────────────────
 # State sync — proses event terjadwal SEBELUM widget di-render.
 # Pola: handler menulis ke session_state[<flag>], di awal run kita pop &
@@ -130,7 +148,9 @@ def render_country_detail(detail: dict | None) -> None:
             unsafe_allow_html=True,
         )
     with hdr_right:
-        if st.button("✕", key="close_detail", help="Tutup panel detail"):
+        # "»" (double right chevron) — kesan "geser ke kanan/tutup",
+        # lebih intuitif drpd "✕" untuk panel yg konseptual slide-out.
+        if st.button("»", key="close_detail", help="Tutup panel detail"):
             st.session_state["pending_close_detail"] = True
             st.rerun()
 
@@ -242,7 +262,10 @@ with map_col:
 
 if detail_col is not None:
     with detail_col:
-        render_country_detail(detail)
+        # Bordered container → CSS global memberikan bg semi-transparan +
+        # shadow halus, kesan panel floating yang "opacity sedikit".
+        with st.container(border=True):
+            render_country_detail(detail)
 
 with donut_col:
     # Spacer untuk vertically center pie (240px) terhadap peta (520px).
@@ -363,10 +386,14 @@ with bot_right:
         "% negara dengan usia min. ≥ 18 (dengan izin orang tua). Geser rentang "
         "tahun untuk fokus periode tertentu."
     )
-    year_range = st.slider(
-        "Rentang tahun", min_value=1995, max_value=2023, value=(1995, 2023),
-        label_visibility="collapsed",
-    )
+    # Slider rentang tahun — bungkus sub-kolom supaya tidak terlalu lebar
+    # (full-width di bot_right setengah layar terasa "lucu" / janggal).
+    sl_col, _ = st.columns([3, 2])
+    with sl_col:
+        year_range = st.slider(
+            "Rentang tahun", min_value=1995, max_value=2023, value=(1995, 2023),
+            label_visibility="collapsed",
+        )
     st.plotly_chart(
         timeseries.render(fdf, year_range=year_range),
         width="stretch", config=STATIC_CFG,

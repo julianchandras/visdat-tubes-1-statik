@@ -144,20 +144,19 @@ def render(
         landcolor="#ECEDEF",
     )
     zoom_set = False
-    if focus_iso3 and {"bbox_lon_min", "bbox_lat_min",
-                       "bbox_lon_max", "bbox_lat_max"}.issubset(d.columns):
+    # Saat negara fokus dipilih, zoom ke REGION-nya (bukan bbox negara).
+    # User tetap dapat konteks tetangga; negara fokus tetap di-highlight via
+    # dim mode (semua lain abu-abu). Revisi tim: lebih informatif drpd tight
+    # zoom ke 1 negara yang kehilangan konteks geografis.
+    if focus_iso3:
         focus_row = d[d["iso3"] == focus_iso3]
         if not focus_row.empty:
-            r = focus_row.iloc[0]
-            bounds = T.country_zoom_bounds(
-                r["bbox_lon_min"], r["bbox_lat_min"],
-                r["bbox_lon_max"], r["bbox_lat_max"],
-            )
-            if bounds is not None:
-                lon_lo, lon_hi, lat_lo, lat_hi = bounds
+            focus_region = focus_row.iloc[0].get("region")
+            if focus_region in T.REGION_BBOX:
+                lon_min, lon_max, lat_min, lat_max = T.REGION_BBOX[focus_region]
                 geo_kwargs.update(
-                    lonaxis=dict(range=[lon_lo, lon_hi]),
-                    lataxis=dict(range=[lat_lo, lat_hi]),
+                    lonaxis=dict(range=[lon_min, lon_max]),
+                    lataxis=dict(range=[lat_min, lat_max]),
                 )
                 zoom_set = True
     if not zoom_set and zoom_region and zoom_region in T.REGION_BBOX:
