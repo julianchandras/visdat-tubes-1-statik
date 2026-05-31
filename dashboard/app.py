@@ -353,12 +353,15 @@ st.divider()
 # Dipindah ke sini (sebelumnya di bawah Gender×Income | Loophole) supaya
 # alur naratif: overview geografis (peta+pie) → mekanisme erosi (Sankey) →
 # breakdown analitik kategorik (gender + loophole) → deep dive umur+temporal.
-st.subheader("Erosi Hukum: Aliran Negara Antar Layer Hukum")
+st.subheader("Pengaruh Celah Hukum terhadap Usia Minimum Pernikahan")
 st.caption(
-    "Aliran negara antar 3 layer hukum: Legal (tanpa exception) → Loop "
-    "(+izin orang tua / adat) → Any (+kehamilan & persetujuan pengadilan). "
-    "Lebar pita = jumlah negara. Pita yang turun dari ≥ 18 ke kategori usia "
-    "lebih muda menandakan erosi perlindungan akibat exception yang diakui hukum."
+    "Sebuah negara dapat memiliki usia minimum pernikahan yang berbeda "
+    "tergantung pengecualian apa yang diakui hukumnya. Diagram menampilkan "
+    "aliran 193 negara dari (1) hukum standar tanpa pengecualian, ditambah "
+    "(2) celah izin orang tua atau hukum adat/agama, hingga (3) semua "
+    "pengecualian termasuk kehamilan dan persetujuan pengadilan. Lebar pita "
+    "menunjukkan jumlah negara; pita yang turun ke kategori usia lebih muda "
+    "menandakan negara yang kehilangan perlindungan akibat pengecualian."
 )
 st.plotly_chart(
     erosion_sankey.render(fdf),
@@ -395,9 +398,12 @@ bot_left, bot_right = st.columns([1, 1])
 with bot_left:
     st.subheader("Tangga Perlindungan menurut Umur Anak")
     st.caption(
-        "Untuk anak umur ini, di berapa negara mereka secara hukum dilarang "
-        "menikah, hanya boleh dengan persetujuan pengadilan/kehamilan, boleh "
-        "dengan izin orang tua, atau tanpa pembatasan?  \n"
+        "Bayangkan seorang anak berumur ini di seluruh dunia — sejauh mana "
+        "hukum melindungi mereka dari pernikahan? Diagram menampilkan "
+        "distribusi 193 negara untuk tiap tingkat perlindungan: dari yang "
+        "sepenuhnya melarang, hanya membolehkan dalam kasus tertentu "
+        "(persetujuan pengadilan atau kehamilan), membolehkan dengan izin "
+        "orang tua, hingga tanpa pembatasan apa pun.  \n"
         "**P** = Perempuan · **L** = Laki-laki"
     )
     age_choice = st.radio(
@@ -415,9 +421,11 @@ with bot_left:
 with bot_right:
     st.subheader("Perkembangan Perlindungan Hukum, 1995–2023")
     st.caption(
-        "Persentase negara dengan usia minimum pernikahan ≥ 18 tahun "
-        "(dengan izin orang tua) sepanjang tahun. Pilih rentang tahun untuk "
-        "fokus ke periode tertentu."
+        "Sejak 1995, semakin banyak negara menetapkan usia minimum "
+        "pernikahan ≥ 18 tahun meskipun ada izin orang tua. Garis "
+        "menampilkan persentase negara yang memenuhi standar ini di tiap "
+        "tahun, dipisahkan menurut gender. Pilih rentang tahun di bawah "
+        "untuk fokus pada periode tertentu."
     )
     YEARS = list(range(1995, 2024))
     y_col1, y_col2 = st.columns(2)

@@ -18,9 +18,9 @@ import theme as T
 
 
 LAYERS = [
-    ("minage_fem_leg",  "Legal\n(tanpa exception)"),
-    ("minage_fem_loop", "Loop\n(+izin ortu/adat)"),
-    ("minage_fem_any",  "Any\n(+kehamilan, court, dll)"),
+    ("minage_fem_leg",  "Hukum Standar\n(tanpa pengecualian)"),
+    ("minage_fem_loop", "+ Celah Izin Orang Tua\natau Adat / Agama"),
+    ("minage_fem_any",  "+ Semua Pengecualian\n(kehamilan, pengadilan, dll)"),
 ]
 # Urutan kategori dari atas ke bawah dalam tiap layer (visual top→bottom).
 CAT_ORDER = [5.0, 3.0, 2.0, 1.0, 9.0]
