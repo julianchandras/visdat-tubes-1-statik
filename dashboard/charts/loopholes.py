@@ -27,7 +27,7 @@ def render(fdf) -> go.Figure:
         counts = [int(sub[col].isin(codes).sum()) for _, col, codes in CATEGORIES]
         g_display = T.income_id(g)   # display label Indonesia
         fig.add_bar(
-            y=cats, x=counts, name=g_display, orientation="h",
+            y=cats, x=counts, orientation="h",
             marker_color=T.INCOME_COLORS[g],
             hovertemplate="<b>%{y}</b><br>" + g_display + ": %{x} negara<extra></extra>",
         )

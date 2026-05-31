@@ -28,12 +28,12 @@ def render(fdf, year_range=(1995, 2023), region=None) -> go.Figure:
     ))
     fig.add_trace(go.Scatter(
         x=ts["year"], y=ts["Laki-laki"], mode="lines",
-        name="Laki-laki", line=dict(color=T.COLOR_MALE, width=2.2),
+        line=dict(color=T.COLOR_MALE, width=2.2),
         hovertemplate="%{x}<br>Laki-laki: %{y:.0f}%<extra></extra>",
     ))
     fig.add_trace(go.Scatter(
         x=ts["year"], y=ts["Perempuan"], mode="lines",
-        name="Perempuan", line=dict(color=T.COLOR_FEMALE, width=2.2),
+        line=dict(color=T.COLOR_FEMALE, width=2.2),
         hovertemplate="%{x}<br>Perempuan: %{y:.0f}%<extra></extra>",
     ))
 

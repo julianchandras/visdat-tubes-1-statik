@@ -246,7 +246,7 @@ _SWATCH_BASE = (
     "display:inline-flex;align-items:center;gap:5px;"
     "margin-right:18px;font-size:13px;color:#2D3142;"
 )
-_LEGEND_WRAP = "display:flex;flex-wrap:wrap;align-items:center;padding:4px 0 6px 0;"
+_LEGEND_WRAP = "display:flex;flex-wrap:wrap;align-items:center;justify-content:center;padding:4px 0 6px 0;"
 
 
 def _swatch(color: str, label: str, line: bool = False) -> str:

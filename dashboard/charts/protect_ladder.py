@@ -78,7 +78,6 @@ def render(fdf, age: int = 13) -> go.Figure:
         text_color = _text_color_for_bg(T.PROTECT_COLORS[code])
         fig.add_trace(go.Bar(
             y=ys, x=xs, orientation="h",
-            name=T.PROTECT_LABELS[code],
             marker_color=T.PROTECT_COLORS[code],
             text=[f"<b>{n}</b>" if n > 0 else "" for n in xs],
             textposition="inside",

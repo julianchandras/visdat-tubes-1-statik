@@ -41,7 +41,7 @@ def render(fdf) -> go.Figure:
     fig = go.Figure()
     # customdata = [num, den] per bar → hover tampilkan kedua angka.
     fig.add_bar(
-        x=incomes_display, y=fem_vals, name="Perempuan",
+        x=incomes_display, y=fem_vals,
         marker_color=T.COLOR_FEMALE,
         customdata=list(zip(fem_num, fem_den)),
         hovertemplate=(
@@ -51,7 +51,7 @@ def render(fdf) -> go.Figure:
         ),
     )
     fig.add_bar(
-        x=incomes_display, y=mal_vals, name="Laki-laki",
+        x=incomes_display, y=mal_vals,
         marker_color=T.COLOR_MALE,
         customdata=list(zip(mal_num, mal_den)),
         hovertemplate=(
