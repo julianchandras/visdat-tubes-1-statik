@@ -98,20 +98,19 @@ def render(fdf, age: int = 13) -> go.Figure:
     fig.update_layout(
         **layout,
         barmode="stack",
-        height=380,   # naik untuk akomodasi legend vertikal 4 baris di bawah
+        height=380,
         showlegend=True,
-        # Legend VERTIKAL 4 baris × 1 kolom (revisi tim — sebelumnya 2×2 grid
-        # truncate label panjang spt "Hanya persetujuan pengadilan / kehamilan"
-        # di half-width column. Vertikal = full text terbaca, no truncation).
         legend=dict(
-            orientation="v",
-            yanchor="top", y=-0.05,
-            xanchor="left", x=0.0,
-            font=dict(size=10),
+            orientation="h",
+            yanchor="bottom", y=1.02,
+            xanchor="center", x=0.5,
+            font=dict(size=12),
             traceorder="normal",
+            entrywidthmode="fraction",
+            entrywidth=0.45,
             itemsizing="constant",
         ),
-        margin=dict(l=10, r=10, t=20, b=120),
+        margin=dict(l=10, r=10, t=85, b=10),
         bargap=0.40,
     )
     fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False)

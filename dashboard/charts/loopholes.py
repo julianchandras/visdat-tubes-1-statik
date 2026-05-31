@@ -39,10 +39,8 @@ def render(fdf) -> go.Figure:
         height=340,
         xaxis=dict(title="Jumlah negara", gridcolor=T.COLOR_GRIDLINE),
         yaxis=dict(title=None, autorange="reversed"),
-        # Legend di bawah chart (revisi tim — label "Berpendapatan ..." panjang,
-        # di atas y=1.02 ter-truncate krn half-width).
-        legend=dict(orientation="h", yanchor="top", y=-0.18,
-                    xanchor="center", x=0.5, font=dict(size=11)),
-        margin=dict(l=10, r=10, t=20, b=70),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02,
+                    xanchor="center", x=0.5, font=dict(size=13)),
+        margin=dict(l=10, r=10, t=60, b=10),
     )
     return T.lock_static(fig)

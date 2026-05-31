@@ -45,10 +45,9 @@ def render(fdf, year_range=(1995, 2023), region=None) -> go.Figure:
                    gridcolor=T.COLOR_GRIDLINE),
         yaxis=dict(title="% negara usia min. ≥ 18 thn", range=[0, 105],
                    ticksuffix="%", gridcolor=T.COLOR_GRIDLINE),
-        # Legend di bawah chart (revisi tim — konsistensi dgn chart lain).
-        legend=dict(orientation="h", yanchor="top", y=-0.18,
-                    xanchor="center", x=0.5, font=dict(size=11)),
-        margin=dict(l=10, r=10, t=20, b=70),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02,
+                    xanchor="center", x=0.5, font=dict(size=13)),
+        margin=dict(l=10, r=10, t=60, b=10),
         hovermode="x unified",
     )
     return T.lock_static(fig)
