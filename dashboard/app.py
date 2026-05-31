@@ -37,12 +37,12 @@ st.markdown(
         backdrop-filter: blur(2px);
         padding-bottom: 0.6rem !important;
     }
-    /* Caption — default muted (~#A0A4AB) terlalu menyatu dgn bg; bump kontras
-       + sedikit lebih besar (revisi tim). */
+    /* Caption — default muted terlalu menyatu dgn bg; revisi tim minta hitam
+       + lebih besar lagi. */
     [data-testid="stCaption"], [data-testid="stCaptionContainer"] {
-        color: #4D525E !important;
-        font-size: 0.86rem !important;
-        line-height: 1.45 !important;
+        color: #000000 !important;
+        font-size: 0.95rem !important;
+        line-height: 1.5 !important;
     }
     </style>
     """,
