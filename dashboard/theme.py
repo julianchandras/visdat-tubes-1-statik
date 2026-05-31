@@ -15,12 +15,14 @@ LOOP_SUMM_COLORS = {
     9.0: "#FFD60A",   # unknown (kuning gold)
 }
 
+# Label tingkat perlindungan — bahasa Indonesia, gaya dasbor (bukan
+# infografis); prefix "1 masalah:" / "2 masalah:" dihapus per revisi tim.
 LOOP_SUMM_LABELS = {
-    5.0: "Kesetaraan & usia ≥ 18 tahun",
-    3.0: "1 masalah: kesenjangan ATAU usia 14-17",
-    2.0: "2 masalah: kesenjangan DAN usia 14-17",
+    5.0: "Kesetaraan dan usia ≥ 18 tahun",
+    3.0: "Kesenjangan ATAU usia 14-17 tahun",
+    2.0: "Kesenjangan DAN usia 14-17 tahun",
     1.0: "Bisa menikah ≤ 13 tahun",
-    9.0: "Mungkin < 18 (diatur adat/agama)",
+    9.0: "Mungkin < 18 tahun (diatur adat/agama)",
 }
 # Label ringkas untuk legend peta (label penuh tetap dipakai di hover & donut).
 LOOP_SUMM_SHORT = {
@@ -146,6 +148,8 @@ INCOME_COLORS = {
 INCOME_ORDER = ["Low-income", "Middle-income", "High-income"]
 
 # ── Region order (selaras poster) ──
+# Values internal = Inggris ISO (matching kolom CSV utk filter); display label
+# Indonesia via REGION_LABELS_ID. Pola sama untuk wb_econ_label.
 REGION_ORDER = [
     "Europe & Central Asia",
     "South Asia",
@@ -154,6 +158,33 @@ REGION_ORDER = [
     "Americas",
     "East Asia & Pacific",
 ]
+
+# ── i18n: mapping value internal (Inggris) ↔ label display (Indonesia) ──
+# Single source of truth — UI di mana saja menampilkan label Indonesia,
+# tapi filter pandas tetap match dgn value Inggris di CSV (no data migration).
+REGION_LABELS_ID = {
+    "Europe & Central Asia":      "Eropa dan Asia Tengah",
+    "South Asia":                 "Asia Selatan",
+    "Middle East & North Africa": "Timur Tengah dan Afrika Utara",
+    "Sub-Saharan Africa":         "Afrika Sub-Sahara",
+    "Americas":                   "Amerika",
+    "East Asia & Pacific":        "Asia Timur dan Pasifik",
+}
+INCOME_LABELS_ID = {
+    "Low-income":    "Berpendapatan Rendah",
+    "Middle-income": "Berpendapatan Menengah",
+    "High-income":   "Berpendapatan Tinggi",
+}
+
+
+def region_id(en: str) -> str:
+    """Display label Indonesia untuk region. Fallback ke value asli."""
+    return REGION_LABELS_ID.get(en, en)
+
+
+def income_id(en: str) -> str:
+    """Display label Indonesia untuk income group. Fallback ke value asli."""
+    return INCOME_LABELS_ID.get(en, en)
 
 # ── Font stack (Streamlit config.toml memuat font utama) ──
 FONT_SERIF = "Playfair Display, Georgia, serif"

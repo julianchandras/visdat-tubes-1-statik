@@ -109,9 +109,14 @@ def render(
             trace.marker.line.width = 0.3
             trace.showlegend = False
         elif is_focus_trace:
+            # Border focus tetap teal kontras supaya negara fokus pop —
+            # ini tujuan kontras visual, bukan border default.
             trace.marker.line.color = T.COLOR_HEADLINE
             trace.marker.line.width = 2.5
         else:
+            # Border negara default: putih netral (revisi tim grup F:
+            # "lebih netral daripada biru, misal hitam/putih"). White line
+            # tipis berfungsi sbg pemisah polygon yang ringan.
             trace.marker.line.color = "#FFFFFF"
             trace.marker.line.width = 0.7
     fig.update_traces(
