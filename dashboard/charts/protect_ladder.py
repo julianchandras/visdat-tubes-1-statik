@@ -10,9 +10,6 @@ diulang).
 
 Angka per segment via Plotly built-in trace `text` (textposition='inside') →
 otomatis ikut visibility saat user toggle kategori di legend (no orphan).
-
-Legend 4 kategori dipaksa 2×2 grid via entrywidth fraction (revisi tim:
-"seluas apapun layoutnya pastikan dia ada dua row").
 """
 from __future__ import annotations
 
@@ -99,16 +96,8 @@ def render(fdf, age: int = 13) -> go.Figure:
         **layout,
         barmode="stack",
         height=380,
-        showlegend=True,
-        legend=dict(
-            orientation="h",
-            yref="container", y=1.0, yanchor="top",
-            xref="container", x=0.01, xanchor="left",
-            font=dict(size=12),
-            traceorder="normal",
-            itemsizing="constant",
-        ),
-        margin=dict(l=10, r=10, t=110, b=10),
+        showlegend=False,
+        margin=dict(l=10, r=10, t=20, b=10),
         bargap=0.40,
     )
     fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False)

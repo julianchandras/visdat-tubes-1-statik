@@ -242,6 +242,29 @@ MAP_CFG = {"displayModeBar": True, "scrollZoom": True,
            "modeBarButtonsToRemove": ["select2d", "lasso2d", "autoScale2d"]}
 STATIC_CFG = {"displayModeBar": False, "scrollZoom": False, "staticPlot": False}
 
+_SWATCH_BASE = (
+    "display:inline-flex;align-items:center;gap:5px;"
+    "margin-right:18px;font-size:13px;color:#2D3142;"
+)
+_LEGEND_WRAP = "display:flex;flex-wrap:wrap;align-items:center;padding:4px 0 6px 0;"
+
+
+def _swatch(color: str, label: str, line: bool = False) -> str:
+    if line:
+        shape = "width:22px;height:3px;border-radius:1px;"
+    else:
+        shape = "width:13px;height:13px;border-radius:2px;"
+    return (
+        f'<span style="{_SWATCH_BASE}">'
+        f'<span style="display:inline-block;{shape}background:{color};flex-shrink:0;"></span>'
+        f'<span>{label}</span></span>'
+    )
+
+
+def _html_legend(items: list, line: bool = False) -> str:
+    inner = "".join(_swatch(c, l, line) for c, l in items)
+    return f'<div style="{_LEGEND_WRAP}">{inner}</div>'
+
 # ── Section 1: Peta + (Detail panel) + Pie ──
 st.subheader("Peta Perlindungan Anak dari Pernikahan Dini")
 st.caption(
@@ -381,6 +404,10 @@ with col_left:
         "tertentu."
     )
     st.plotly_chart(gender_income.render(fdf), width="stretch", config=STATIC_CFG)
+    st.markdown(_html_legend([
+        (T.COLOR_FEMALE, "Perempuan"),
+        (T.COLOR_MALE, "Laki-laki"),
+    ]), unsafe_allow_html=True)
 with col_right:
     st.subheader("Celah Hukum Pernikahan Anak")
     st.caption(
@@ -391,6 +418,10 @@ with col_right:
         "di bawah usia minimum yang ditetapkan hukum umum."
     )
     st.plotly_chart(loopholes.render(fdf), width="stretch", config=STATIC_CFG)
+    _loop_incomes = [g for g in T.INCOME_ORDER if g in fdf["wb_econ_label"].unique()]
+    st.markdown(_html_legend([
+        (T.INCOME_COLORS[g], T.income_id(g)) for g in _loop_incomes
+    ]), unsafe_allow_html=True)
 
 st.divider()
 
@@ -422,6 +453,10 @@ with bot_left:
         protect_ladder.render(fdf, age=age_choice),
         width="stretch", config=STATIC_CFG,
     )
+    st.markdown(_html_legend([
+        (T.PROTECT_COLORS[code], T.PROTECT_LABELS[code])
+        for code in T.PROTECT_ORDER
+    ]), unsafe_allow_html=True)
 with bot_right:
     st.subheader("Perkembangan Perlindungan Hukum, 1995–2023")
     st.caption(
@@ -447,6 +482,10 @@ with bot_right:
         timeseries.render(fdf, year_range=(start_year, end_year)),
         width="stretch", config=STATIC_CFG,
     )
+    st.markdown(_html_legend([
+        (T.COLOR_MALE, "Laki-laki"),
+        (T.COLOR_FEMALE, "Perempuan"),
+    ], line=True), unsafe_allow_html=True)
 
 st.divider()
 st.caption(
