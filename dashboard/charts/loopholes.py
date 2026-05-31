@@ -32,13 +32,17 @@ def render(fdf) -> go.Figure:
             hovertemplate="<b>%{y}</b><br>" + g_display + ": %{x} negara<extra></extra>",
         )
 
-    layout = {k: v for k, v in T.PLOTLY_LAYOUT.items() if k != "colorway"}
+    layout = {k: v for k, v in T.PLOTLY_LAYOUT.items() if k not in ("colorway", "margin")}
     fig.update_layout(
         **layout,
         barmode="stack",
         height=340,
         xaxis=dict(title="Jumlah negara", gridcolor=T.COLOR_GRIDLINE),
         yaxis=dict(title=None, autorange="reversed"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+        # Legend di bawah chart (revisi tim — label "Berpendapatan ..." panjang,
+        # di atas y=1.02 ter-truncate krn half-width).
+        legend=dict(orientation="h", yanchor="top", y=-0.18,
+                    xanchor="center", x=0.5, font=dict(size=11)),
+        margin=dict(l=10, r=10, t=20, b=70),
     )
     return T.lock_static(fig)

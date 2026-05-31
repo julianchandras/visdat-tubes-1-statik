@@ -94,27 +94,24 @@ def render(fdf, age: int = 13) -> go.Figure:
     # Y-axis order: P di atas, L di bawah (Plotly horizontal bar bawah → atas).
     y_categories_reverse = [g[1] for g in reversed(GENDERS)]   # ["L", "P"]
 
-    layout = {k: v for k, v in T.PLOTLY_LAYOUT.items() if k != "colorway"}
+    layout = {k: v for k, v in T.PLOTLY_LAYOUT.items() if k not in ("colorway", "margin")}
     fig.update_layout(
         **layout,
         barmode="stack",
-        height=320,
+        height=380,   # naik untuk akomodasi legend vertikal 4 baris di bawah
         showlegend=True,
+        # Legend VERTIKAL 4 baris × 1 kolom (revisi tim — sebelumnya 2×2 grid
+        # truncate label panjang spt "Hanya persetujuan pengadilan / kehamilan"
+        # di half-width column. Vertikal = full text terbaca, no truncation).
         legend=dict(
-            orientation="h",
-            yanchor="bottom", y=-0.55,
-            xanchor="center", x=0.5,
+            orientation="v",
+            yanchor="top", y=-0.05,
+            xanchor="left", x=0.0,
             font=dict(size=10),
             traceorder="normal",
-            # entrywidth=0.45 fraction → tiap item 45% legend container.
-            # 2×0.45=0.90 (2 fit per row dgn 10% gap distribusi), 3×0.45=
-            # 1.35 (3rd wrap). Memastikan 2×2 grid konsisten di layout
-            # selebar apapun (revisi tim ulangan: previously 0.48 belum
-            # cukup robust). Sisa 10% jadi gap visual antar kolom.
-            entrywidthmode="fraction",
-            entrywidth=0.45,
             itemsizing="constant",
         ),
+        margin=dict(l=10, r=10, t=20, b=120),
         bargap=0.40,
     )
     fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False)

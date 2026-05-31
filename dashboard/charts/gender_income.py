@@ -60,7 +60,7 @@ def render(fdf) -> go.Figure:
             "<extra></extra>"
         ),
     )
-    layout = {k: v for k, v in T.PLOTLY_LAYOUT.items() if k != "colorway"}
+    layout = {k: v for k, v in T.PLOTLY_LAYOUT.items() if k not in ("colorway", "margin")}
     fig.update_layout(
         **layout,
         barmode="group",
@@ -68,6 +68,11 @@ def render(fdf) -> go.Figure:
         yaxis=dict(title="% negara usia min. ≥ 18 thn", range=[0, 105],
                    ticksuffix="%", gridcolor=T.COLOR_GRIDLINE),
         xaxis=dict(title=None),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+        # Legend di bawah chart (revisi tim — saat di atas y=1.02 sering ter-
+        # truncate krn half-width column). Bottom + center = punya row sendiri
+        # dgn ruang horizontal penuh.
+        legend=dict(orientation="h", yanchor="top", y=-0.15,
+                    xanchor="center", x=0.5, font=dict(size=11)),
+        margin=dict(l=10, r=10, t=20, b=60),
     )
     return T.lock_static(fig)
