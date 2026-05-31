@@ -375,9 +375,10 @@ col_left, col_right = st.columns(2)
 with col_left:
     st.subheader("Kesenjangan Gender menurut Pendapatan")
     st.caption(
-        "Persentase negara di tiap tingkat pendapatan yang mengatur usia "
-        "minimum pernikahan ≥ 18 tahun, dipisahkan menurut gender. Selisih "
-        "antara bar perempuan dan laki-laki menunjukkan adanya kesenjangan."
+        "Persentase negara per tingkat pendapatan yang mengatur usia minimum "
+        "pernikahan 18 tahun bagi laki-laki maupun perempuan. Selisih antara "
+        "bar perempuan dan laki-laki menunjukkan adanya kesenjangan di negara "
+        "tertentu."
     )
     st.plotly_chart(gender_income.render(fdf), width="stretch", config=STATIC_CFG)
 with col_right:
