@@ -317,8 +317,8 @@ def _swatch_row(color: str, label: str) -> str:
 # Ide tim: keterangan legenda lebih ringkas tanpa prefix "1 masalah: ..."
 SHORT_LEGEND_LABELS = {
     5.0: "Setara, ≥ 18 tahun",
-    3.0: "Kesenjangan ATAU usia 14-17",
-    2.0: "Kesenjangan DAN usia 14-17",
+    3.0: "Ada kesenjangan ATAU usia 14-17",
+    2.0: "Ada kesenjangan DAN usia 14-17",
     1.0: "Bisa menikah ≤ 13 tahun",
     9.0: "Adat / agama",
 }
