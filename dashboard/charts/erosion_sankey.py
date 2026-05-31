@@ -56,15 +56,31 @@ def render(fdf) -> go.Figure:
         return fig
 
     # ── Bangun node list: 3 layer × 5 kategori = 15 nodes.
+    # Posisi node EKSPLISIT supaya urutan dalam tiap kolom konsisten
+    # top→bottom dari terbaik (≥18) ke terburuk (≤13) + ambigu (Tidak
+    # diketahui) di paling bawah. Tanpa ini Plotly auto-arrange berbasis
+    # berat link → posisi node "Tidak diketahui" loncat antar kolom
+    # (revisi tim).
+    LAYER_X = [0.01, 0.5, 0.99]   # column x (relatif domain Sankey)
+    CAT_Y = {
+        5.0: 0.05,   # ≥ 18 thn — paling atas (terbaik)
+        3.0: 0.28,   # 16-17
+        2.0: 0.50,   # 14-15
+        1.0: 0.73,   # ≤ 13
+        9.0: 0.95,   # Tidak diketahui — paling bawah (ambigu)
+    }
     node_labels: list[str] = []
     node_colors: list[str] = []
+    node_x: list[float] = []
+    node_y: list[float] = []
     node_idx: dict[tuple[int, float], int] = {}     # (layer_i, code) -> node index
     for li, (_, layer_label) in enumerate(LAYERS):
         for code in CAT_ORDER:
             node_idx[(li, code)] = len(node_labels)
-            # Label node minimal supaya tidak overlap; layer ditandai via posisi x.
             node_labels.append(CAT_LABELS[code])
             node_colors.append(CAT_COLORS[code])
+            node_x.append(LAYER_X[li])
+            node_y.append(CAT_Y[code])
 
     # ── Bangun link list: untuk tiap transisi (layer i → i+1), agregasi count.
     source, target, value, link_colors, link_labels = [], [], [], [], []
@@ -109,6 +125,8 @@ def render(fdf) -> go.Figure:
         node=dict(
             label=node_labels,
             color=node_colors,
+            x=node_x,
+            y=node_y,
             pad=18,
             thickness=18,
             line=dict(color="white", width=0.5),
