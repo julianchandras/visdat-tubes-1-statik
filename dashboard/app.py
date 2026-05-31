@@ -411,8 +411,8 @@ with col_left:
 with col_right:
     st.subheader("Celah Hukum Pernikahan Anak")
     st.caption(
-        "Apa saja alasan yang memungkinkan terjadinya pernikahan dini akibat "
-        "celah hukum? Diagram menunjukkan jumlah negara yang mengizinkan "
+        "Pernikahan dini dapat terjadi meskipun usia minimum secara hukum adalah 18 tahun. "
+        "Diagram menunjukkan jumlah negara yang mengizinkan "
         "pernikahan dini untuk tiap alasan, dipecah menurut tingkat pendapatan. "
         "Celah hukum artinya terdapat ketentuan yang memungkinkan pernikahan "
         "di bawah usia minimum yang ditetapkan hukum umum."
@@ -433,10 +433,9 @@ with bot_left:
     # Streamlit re-run tiap widget change → caption ter-update otomatis.
     current_age = st.session_state.get("protect_age", 13)
     st.caption(
-        f"Bayangkan seorang anak berumur **{current_age} tahun** di seluruh "
-        "dunia — sejauh mana hukum melindungi mereka dari pernikahan? Diagram "
-        "menampilkan distribusi 193 negara untuk tiap tingkat perlindungan: "
-        "dari yang sepenuhnya melarang, hanya membolehkan dalam kasus "
+        f"Kondisi perlindungan hukum bagi anak berusia **{current_age} tahun** di seluruh "
+        "dunia. Diagram menampilkan distribusi 193 negara untuk tiap tingkat perlindungan. "
+        "Dari yang sepenuhnya melarang, hanya membolehkan dalam kasus "
         "tertentu (persetujuan pengadilan atau kehamilan), membolehkan "
         "dengan izin orang tua, hingga tanpa pembatasan apa pun.  \n"
         "**P** = Perempuan · **L** = Laki-laki"
