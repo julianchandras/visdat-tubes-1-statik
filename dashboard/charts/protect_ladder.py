@@ -103,14 +103,12 @@ def render(fdf, age: int = 13) -> go.Figure:
         legend=dict(
             orientation="h",
             yref="container", y=1.0, yanchor="top",
-            xanchor="center", x=0.5,
+            xref="container", x=0.01, xanchor="left",
             font=dict(size=12),
             traceorder="normal",
-            entrywidthmode="fraction",
-            entrywidth=0.45,
             itemsizing="constant",
         ),
-        margin=dict(l=10, r=10, t=100, b=10),
+        margin=dict(l=10, r=10, t=110, b=10),
         bargap=0.40,
     )
     fig.update_xaxes(showgrid=False, zeroline=False, showticklabels=False)

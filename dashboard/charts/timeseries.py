@@ -46,8 +46,8 @@ def render(fdf, year_range=(1995, 2023), region=None) -> go.Figure:
         yaxis=dict(title="% negara usia min. ≥ 18 thn", range=[0, 105],
                    ticksuffix="%", gridcolor=T.COLOR_GRIDLINE),
         legend=dict(orientation="h", yref="container", y=1.0, yanchor="top",
-                    xanchor="center", x=0.5, font=dict(size=13)),
-        margin=dict(l=10, r=10, t=80, b=10),
+                    xref="container", x=0.01, xanchor="left", font=dict(size=13)),
+        margin=dict(l=10, r=10, t=60, b=10),
         hovermode="x unified",
     )
     return T.lock_static(fig)

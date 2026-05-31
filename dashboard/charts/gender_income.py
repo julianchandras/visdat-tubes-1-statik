@@ -69,7 +69,7 @@ def render(fdf) -> go.Figure:
                    ticksuffix="%", gridcolor=T.COLOR_GRIDLINE),
         xaxis=dict(title=None),
         legend=dict(orientation="h", yref="container", y=1.0, yanchor="top",
-                    xanchor="center", x=0.5, font=dict(size=13)),
-        margin=dict(l=10, r=10, t=80, b=30),
+                    xref="container", x=0.01, xanchor="left", font=dict(size=13)),
+        margin=dict(l=10, r=10, t=60, b=30),
     )
     return T.lock_static(fig)
