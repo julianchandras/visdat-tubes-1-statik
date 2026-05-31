@@ -386,8 +386,8 @@ with col_right:
         "Apa saja alasan yang memungkinkan terjadinya pernikahan dini akibat "
         "celah hukum? Diagram menunjukkan jumlah negara yang mengizinkan "
         "pernikahan dini untuk tiap alasan, dipecah menurut tingkat pendapatan. "
-        "Celah hukum = ketentuan yang memungkinkan pernikahan di bawah usia "
-        "minimum yang ditetapkan hukum umum."
+        "Celah hukum artinya terdapat ketentuan yang memungkinkan pernikahan "
+        "di bawah usia minimum yang ditetapkan hukum umum."
     )
     st.plotly_chart(loopholes.render(fdf), width="stretch", config=STATIC_CFG)
 
