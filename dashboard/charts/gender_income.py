@@ -68,8 +68,8 @@ def render(fdf) -> go.Figure:
         yaxis=dict(title="% negara usia min. ≥ 18 thn", range=[0, 105],
                    ticksuffix="%", gridcolor=T.COLOR_GRIDLINE),
         xaxis=dict(title=None),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02,
+        legend=dict(orientation="h", yref="container", y=1.0, yanchor="top",
                     xanchor="center", x=0.5, font=dict(size=13)),
-        margin=dict(l=10, r=10, t=60, b=30),
+        margin=dict(l=10, r=10, t=80, b=30),
     )
     return T.lock_static(fig)

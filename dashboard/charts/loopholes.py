@@ -39,8 +39,8 @@ def render(fdf) -> go.Figure:
         height=340,
         xaxis=dict(title="Jumlah negara", gridcolor=T.COLOR_GRIDLINE),
         yaxis=dict(title=None, autorange="reversed"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02,
+        legend=dict(orientation="h", yref="container", y=1.0, yanchor="top",
                     xanchor="center", x=0.5, font=dict(size=13)),
-        margin=dict(l=10, r=10, t=60, b=10),
+        margin=dict(l=10, r=10, t=100, b=10),
     )
     return T.lock_static(fig)
