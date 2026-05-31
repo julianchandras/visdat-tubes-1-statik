@@ -397,13 +397,16 @@ st.divider()
 bot_left, bot_right = st.columns([1, 1])
 with bot_left:
     st.subheader("Tangga Perlindungan menurut Umur Anak")
+    # Dynamic age di caption — baca session_state SEBELUM render radio.
+    # Streamlit re-run tiap widget change → caption ter-update otomatis.
+    current_age = st.session_state.get("protect_age", 13)
     st.caption(
-        "Bayangkan seorang anak berumur ini di seluruh dunia — sejauh mana "
-        "hukum melindungi mereka dari pernikahan? Diagram menampilkan "
-        "distribusi 193 negara untuk tiap tingkat perlindungan: dari yang "
-        "sepenuhnya melarang, hanya membolehkan dalam kasus tertentu "
-        "(persetujuan pengadilan atau kehamilan), membolehkan dengan izin "
-        "orang tua, hingga tanpa pembatasan apa pun.  \n"
+        f"Bayangkan seorang anak berumur **{current_age} tahun** di seluruh "
+        "dunia — sejauh mana hukum melindungi mereka dari pernikahan? Diagram "
+        "menampilkan distribusi 193 negara untuk tiap tingkat perlindungan: "
+        "dari yang sepenuhnya melarang, hanya membolehkan dalam kasus "
+        "tertentu (persetujuan pengadilan atau kehamilan), membolehkan "
+        "dengan izin orang tua, hingga tanpa pembatasan apa pun.  \n"
         "**P** = Perempuan · **L** = Laki-laki"
     )
     age_choice = st.radio(

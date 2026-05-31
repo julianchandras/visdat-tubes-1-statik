@@ -108,8 +108,8 @@ PROTECT_COLORS = {
 }
 PROTECT_LABELS = {
     5.0: "Dilarang secara hukum",
-    3.0: "Hanya court approval / kehamilan",
-    2.0: "Boleh dgn izin orang tua / adat",
+    3.0: "Hanya persetujuan pengadilan / kehamilan",
+    2.0: "Boleh dengan izin orang tua / adat",
     1.0: "Tanpa pembatasan",
 }
 PROTECT_ORDER = [5.0, 3.0, 2.0, 1.0]   # paling protektif → paling parah
