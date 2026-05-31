@@ -37,6 +37,13 @@ st.markdown(
         backdrop-filter: blur(2px);
         padding-bottom: 0.6rem !important;
     }
+    /* Caption — default muted (~#A0A4AB) terlalu menyatu dgn bg; bump kontras
+       + sedikit lebih besar (revisi tim). */
+    [data-testid="stCaption"], [data-testid="stCaptionContainer"] {
+        color: #4D525E !important;
+        font-size: 0.86rem !important;
+        line-height: 1.45 !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -342,7 +349,25 @@ if map_pts:
 
 st.divider()
 
-# ── Section 2: Kesenjangan Gender × Pendapatan ║ Celah Hukum ──
+# ── Section 2 (urutan baru per revisi tim): Sankey Erosi Hukum ──
+# Dipindah ke sini (sebelumnya di bawah Gender×Income | Loophole) supaya
+# alur naratif: overview geografis (peta+pie) → mekanisme erosi (Sankey) →
+# breakdown analitik kategorik (gender + loophole) → deep dive umur+temporal.
+st.subheader("Erosi Hukum: Aliran Negara Antar Layer Hukum")
+st.caption(
+    "Aliran negara antar 3 layer hukum: Legal (tanpa exception) → Loop "
+    "(+izin orang tua / adat) → Any (+kehamilan & persetujuan pengadilan). "
+    "Lebar pita = jumlah negara. Pita yang turun dari ≥ 18 ke kategori usia "
+    "lebih muda menandakan erosi perlindungan akibat exception yang diakui hukum."
+)
+st.plotly_chart(
+    erosion_sankey.render(fdf),
+    width="stretch", config=STATIC_CFG,
+)
+
+st.divider()
+
+# ── Section 3: Kesenjangan Gender × Pendapatan ║ Celah Hukum ──
 col_left, col_right = st.columns(2)
 with col_left:
     st.subheader("Kesenjangan Gender menurut Pendapatan")
@@ -362,21 +387,6 @@ with col_right:
         "minimum yang ditetapkan hukum umum."
     )
     st.plotly_chart(loopholes.render(fdf), width="stretch", config=STATIC_CFG)
-
-st.divider()
-
-# ── Section 3: Sankey Erosi Hukum ──
-st.subheader("Erosi Hukum: Aliran Negara Antar Layer Hukum")
-st.caption(
-    "Aliran negara antar 3 layer hukum: Legal (tanpa exception) → Loop "
-    "(+izin orang tua / adat) → Any (+kehamilan & persetujuan pengadilan). "
-    "Lebar pita = jumlah negara. Pita yang turun dari ≥ 18 ke kategori usia "
-    "lebih muda menandakan erosi perlindungan akibat exception yang diakui hukum."
-)
-st.plotly_chart(
-    erosion_sankey.render(fdf),
-    width="stretch", config=STATIC_CFG,
-)
 
 st.divider()
 

@@ -125,8 +125,9 @@ def render(
             "Perlindungan: %{customdata[1]}<br>"
             "Usia min. perempuan: %{customdata[2]}<br>"
             "Usia min. laki-laki: %{customdata[3]}<br>"
-            "Pendapatan: %{customdata[4]}"
-            "<extra>Klik untuk detail</extra>"
+            "Pendapatan: %{customdata[4]}<br>"
+            "<i>Klik untuk detail</i>"
+            "<extra></extra>"
         ),
     )
 
@@ -162,8 +163,9 @@ def render(
                 "Perlindungan: %{customdata[1]}<br>"
                 "Usia min. perempuan: %{customdata[2]}<br>"
                 "Usia min. laki-laki: %{customdata[3]}<br>"
-                "Pendapatan: %{customdata[4]}"
-                "<extra>Klik untuk detail</extra>"
+                "Pendapatan: %{customdata[4]}<br>"
+                "<i>Klik untuk detail</i>"
+                "<extra></extra>"
             ),
             showlegend=False,
             name="bubble",

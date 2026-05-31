@@ -32,8 +32,11 @@ LOOP_SUMM_SHORT = {
     1.0: "Bisa ≤ 13 thn",
     9.0: "Adat/agama",
 }
-# Urutan tampil (legend, sumbu kategori): terbaik → terburuk → ambigu.
-LOOP_SUMM_ORDER = [5.0, 3.0, 2.0, 1.0, 9.0]
+# Urutan tampil (legend, pie slice, sumbu kategori): kuning (ambigu/unknown)
+# setelah hijau (terbaik), lalu skala merah monoton (paling ringan → paling
+# parah). Revisi tim: kuning bukan di skala "kebaikan", lebih jujur secara
+# semantik kalau ditaruh di antara "baik" dan "buruk".
+LOOP_SUMM_ORDER = [5.0, 9.0, 3.0, 2.0, 1.0]
 
 NO_DATA_COLOR = "#9A9A9A"   # medium grey — kontras lebih kuat dari 'di luar filter'
 LABEL_NO_DATA = "Tanpa data"
